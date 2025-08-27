@@ -230,6 +230,7 @@ export default function Reports() {
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">Meus COMPs</p>
                     <p className="text-lg sm:text-2xl font-bold text-accent-foreground">{formatCurrency(currentManagerStats.totalValue)}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{currentManagerStats.totalCount} COMPs registrados</p>
                   </div>
                 </div>
               </Card>
