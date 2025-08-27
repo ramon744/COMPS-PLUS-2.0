@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Comp, CompType, Waiter } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import { useOperationalDay } from '@/hooks/useOperationalDay';
 
 interface CompContextType {
@@ -17,6 +18,19 @@ const CompContext = createContext<CompContextType | undefined>(undefined);
 export function CompProvider({ children }: { children: ReactNode }) {
   const [comps, setComps] = useState<Comp[]>([]);
   const { currentOperationalDay } = useOperationalDay();
+  const { user } = useAuth();
+
+  // Migrar dados antigos quando o usuário estiver logado
+  const migrateOldData = (compsData: Comp[]) => {
+    if (!user) return compsData;
+    
+    return compsData.map(comp => {
+      if (comp.gerenteId === "current-user") {
+        return { ...comp, gerenteId: user.id };
+      }
+      return comp;
+    });
+  };
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -24,12 +38,18 @@ export function CompProvider({ children }: { children: ReactNode }) {
     if (storedComps) {
       try {
         const parsedComps = JSON.parse(storedComps);
-        setComps(parsedComps);
+        const migratedComps = migrateOldData(parsedComps);
+        setComps(migratedComps);
+        
+        // Salvar dados migrados se houve mudanças
+        if (JSON.stringify(migratedComps) !== JSON.stringify(parsedComps)) {
+          localStorage.setItem('comps-plus-data', JSON.stringify(migratedComps));
+        }
       } catch (error) {
         console.error('Error loading COMPs from localStorage:', error);
       }
     }
-  }, []);
+  }, [user]);
 
   // Save data to localStorage whenever comps change
   useEffect(() => {

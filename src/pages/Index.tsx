@@ -6,9 +6,11 @@ import { CompForm } from "@/components/CompForm";
 import { CompEditDialog } from "@/components/CompEditDialog";
 import { useOperationalDay } from "@/hooks/useOperationalDay";
 import { useComps } from "@/hooks/useComps";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRegistry } from "@/contexts/RegistryContext";
 
 const Index = () => {
+  const { user } = useAuth();
   const { currentOperationalDay, formatOperationalDayDisplay, getCurrentTurn, getBrazilTimeString } = useOperationalDay();
   const { 
     getTodayComps, 
@@ -74,7 +76,7 @@ const Index = () => {
       dataHoraUtc: brazilTime,
       diaOperacional: currentOperationalDay,
       turno: turno,
-      gerenteId: "current-user",
+      gerenteId: user?.id || "unknown",
       status: "ativo",
     });
 
