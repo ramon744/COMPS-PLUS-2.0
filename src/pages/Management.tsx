@@ -36,9 +36,11 @@ import { Plus, Edit, Trash2, Users, FileText, CheckCircle, XCircle, UserCheck } 
 import { CompType, Waiter, Manager } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRegistry } from "@/contexts/RegistryContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Management() {
   const { toast } = useToast();
+  const { signUp } = useAuth();
   const {
     compTypes,
     waiters,
@@ -108,7 +110,7 @@ export default function Management() {
     setIsDialogOpen(false);
   };
 
-  const handleSaveManager = (manager: Partial<Manager>) => {
+  const handleSaveManager = async (manager: Partial<Manager>) => {
     if (editingManager?.id) {
       updateManager(editingManager.id, manager);
       toast({
@@ -116,6 +118,20 @@ export default function Management() {
         description: "As informações foram salvas com sucesso.",
       });
     } else {
+      // Create user in Supabase first if creating new manager
+      if (manager.usuario && manager.senha && manager.nome) {
+        const { error } = await signUp(manager.usuario, manager.senha, manager.nome);
+        
+        if (error) {
+          toast({
+            title: "Erro ao criar conta",
+            description: error,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
       addManager({
         nome: manager.nome || "",
         usuario: manager.usuario || "",
@@ -126,7 +142,7 @@ export default function Management() {
       });
       toast({
         title: "Gerente criado",
-        description: "Novo gerente adicionado com sucesso.",
+        description: "Novo gerente adicionado com sucesso. Conta criada no sistema de autenticação.",
       });
     }
     setEditingManager(null);
@@ -395,6 +411,11 @@ export default function Management() {
                         <DialogTitle>
                           {editingManager?.id ? "Editar" : "Novo"} Gerente
                         </DialogTitle>
+                        {!editingManager?.id && (
+                          <p className="text-sm text-muted-foreground">
+                            Ao criar um novo gerente, uma conta será automaticamente criada no sistema de autenticação.
+                          </p>
+                        )}
                       </DialogHeader>
                       <ManagerForm 
                         manager={editingManager}

@@ -150,8 +150,8 @@ const Login = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Sistema com autenticação local.<br />
-                Preparado para migração futura para Supabase.
+                Sistema de autenticação integrado com Supabase.<br />
+                Para criar novos usuários, utilize a aba Cadastros → Gerentes.
               </p>
             </div>
           </CardContent>
