@@ -239,7 +239,7 @@ const Index = () => {
                         <div className="border-t bg-background/50">
                           {waiterComps.map((comp, index) => {
                             const compType = compTypes.find(t => t.id === comp.compTypeId);
-                            const manager = managers.find(m => m.id === comp.gerenteId);
+                            const currentManager = managers.find(m => m.id === comp.gerenteId);
                             
                             return (
                               <div key={comp.id} className={`p-3 sm:p-4 ${index > 0 ? 'border-t border-border/50' : ''}`}>
@@ -248,7 +248,7 @@ const Index = () => {
                                     <h4 className="font-medium text-primary">{compType?.codigo}</h4>
                                     <p className="text-sm text-muted-foreground">{compType?.nome}</p>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                      Registrado por: {manager?.nome || 'Gerente não encontrado'}
+                                      Registrado por: {currentManager?.nome || 'Gerente não encontrado'}
                                     </p>
                                   </div>
                                   <div className="flex flex-row sm:items-center gap-2 justify-between sm:justify-end">
