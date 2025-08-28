@@ -198,6 +198,27 @@ export type Database = {
             referencedRelation: "waiters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_comps_comp_type"
+            columns: ["comp_type_id"]
+            isOneToOne: false
+            referencedRelation: "comp_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_comps_gerente"
+            columns: ["gerente_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_comps_waiter"
+            columns: ["waiter_id"]
+            isOneToOne: false
+            referencedRelation: "waiters"
+            referencedColumns: ["id"]
+          },
         ]
       }
       managers: {
@@ -234,7 +255,15 @@ export type Database = {
           updated_at?: string
           usuario?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_managers_profile"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

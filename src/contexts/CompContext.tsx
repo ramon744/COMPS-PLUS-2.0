@@ -42,7 +42,7 @@ export function CompProvider({ children }: { children: ReactNode }) {
           *,
           comp_types(codigo, nome),
           waiters(nome),
-          profiles(nome)
+          gerente:profiles!gerente_id(nome)
         `)
         .order('created_at', { ascending: false });
 
