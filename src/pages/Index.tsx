@@ -20,7 +20,7 @@ const Index = () => {
     deleteComp, 
     calculateStats 
   } = useComps();
-  const { getActiveCompTypes, getActiveWaiters, compTypes, waiters } = useRegistry();
+  const { getActiveCompTypes, getActiveWaiters, compTypes, waiters, managers } = useRegistry();
   
   const [currentView, setCurrentView] = useState<"dashboard" | "newComp" | "compList">("dashboard");
   const [expandedWaiters, setExpandedWaiters] = useState<Set<string>>(new Set());
@@ -38,22 +38,6 @@ const Index = () => {
 
   const todayComps = getTodayComps();
 
-  // Get all managers for name lookup
-  const getAllManagers = () => {
-    const storedManagers = localStorage.getItem('registry-managers');
-    if (storedManagers) {
-      try {
-        return JSON.parse(storedManagers);
-      } catch (error) {
-        console.error('Error loading managers:', error);
-        return [];
-      }
-    }
-    return [];
-  };
-
-  const managers = getAllManagers();
-
   // Filter COMPs based on search term
   const filteredComps = todayComps.filter(comp => {
     if (!searchTerm) return true;
@@ -61,7 +45,7 @@ const Index = () => {
     const search = searchTerm.toLowerCase();
     const waiter = waiters.find(w => w.id === comp.waiterId);
     const compType = compTypes.find(t => t.id === comp.compTypeId);
-    const manager = managers.find((m: any) => m.id === comp.gerenteId);
+    const manager = managers.find(m => m.id === comp.gerenteId);
     const value = (comp.valorCentavos / 100).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -255,7 +239,7 @@ const Index = () => {
                         <div className="border-t bg-background/50">
                           {waiterComps.map((comp, index) => {
                             const compType = compTypes.find(t => t.id === comp.compTypeId);
-                            const manager = managers.find((m: any) => m.id === comp.gerenteId);
+                            const manager = managers.find(m => m.id === comp.gerenteId);
                             
                             return (
                               <div key={comp.id} className={`p-3 sm:p-4 ${index > 0 ? 'border-t border-border/50' : ''}`}>

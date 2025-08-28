@@ -185,20 +185,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "comps_comp_type_id_fkey"
-            columns: ["comp_type_id"]
-            isOneToOne: false
-            referencedRelation: "comp_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comps_waiter_id_fkey"
-            columns: ["waiter_id"]
-            isOneToOne: false
-            referencedRelation: "waiters"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_comps_comp_type"
             columns: ["comp_type_id"]
             isOneToOne: false

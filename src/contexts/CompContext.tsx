@@ -40,9 +40,9 @@ export function CompProvider({ children }: { children: ReactNode }) {
         .from('comps')
         .select(`
           *,
-          comp_types(codigo, nome),
-          waiters(nome),
-          gerente:profiles!gerente_id(nome)
+          comp_types!fk_comps_comp_type(codigo, nome),
+          waiters!fk_comps_waiter(nome),
+          gerente:profiles!fk_comps_gerente(nome)
         `)
         .order('created_at', { ascending: false });
 
