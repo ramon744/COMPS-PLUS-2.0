@@ -2,6 +2,8 @@ import { useCompContext } from '@/contexts/CompContext';
 import { useRegistry } from '@/contexts/RegistryContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { CompType, Waiter } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 
 interface FilterParams {
   startDate: string;
@@ -12,8 +14,36 @@ interface FilterParams {
 
 export function useReports() {
   const { comps } = useCompContext();
-  const { compTypes, waiters, managers } = useRegistry();
+  const { compTypes, waiters } = useRegistry();
   const { user } = useAuth();
+  const [managerProfiles, setManagerProfiles] = useState<any[]>([]);
+
+  // Load manager profiles from Supabase
+  useEffect(() => {
+    const loadManagerProfiles = async () => {
+      try {
+        // Get unique manager IDs from comps
+        const managerIds = [...new Set(comps.map(comp => comp.gerenteId))];
+        
+        if (managerIds.length === 0) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, nome, email')
+          .in('id', managerIds);
+
+        if (error) throw error;
+        
+        setManagerProfiles(data || []);
+      } catch (error) {
+        console.error('Error loading manager profiles:', error);
+      }
+    };
+
+    if (comps.length > 0) {
+      loadManagerProfiles();
+    }
+  }, [comps]);
 
   const getDateRange = (startDate: string, endDate: string, reportType: string) => {
     const start = new Date(startDate);
@@ -107,7 +137,7 @@ export function useReports() {
   const getManagerRanking = (filters: FilterParams) => {
     const filteredComps = filterComps(filters);
     
-    return managers.map(manager => {
+    return managerProfiles.map(manager => {
       const managerComps = filteredComps.filter(comp => comp.gerenteId === manager.id);
       const totalValue = managerComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
       const totalCount = managerComps.length;
@@ -115,7 +145,7 @@ export function useReports() {
       return {
         id: manager.id,
         name: manager.nome,
-        usuario: manager.usuario,
+        usuario: manager.email,
         totalValue,
         totalCount,
         averageValue: totalCount > 0 ? totalValue / totalCount : 0,
@@ -128,7 +158,7 @@ export function useReports() {
   const getManagerCompsData = (filters: FilterParams) => {
     const filteredComps = filterComps(filters);
     
-    const managerData = managers.map(manager => {
+    const managerData = managerProfiles.map(manager => {
       const managerComps = filteredComps.filter(comp => comp.gerenteId === manager.id);
       const totalValue = managerComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
       
