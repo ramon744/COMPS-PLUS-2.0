@@ -33,6 +33,7 @@ import { WaiterRankingChart } from "@/components/charts/WaiterRankingChart";
 import { ManagerRankingChart } from "@/components/charts/ManagerRankingChart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOperationalDay } from "@/hooks/useOperationalDay";
+import { useRegistry } from "@/contexts/RegistryContext";
 
 export default function Reports() {
   const { 
@@ -45,6 +46,7 @@ export default function Reports() {
   } = useReports();
   const { user } = useAuth();
   const { currentOperationalDay } = useOperationalDay();
+  const { compTypes } = useRegistry();
   
   const [dateRange, setDateRange] = useState({
     start: currentOperationalDay,
@@ -171,12 +173,11 @@ export default function Reports() {
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border">
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="1">COMPS 2</SelectItem>
-                    <SelectItem value="2">COMPS 4</SelectItem>
-                    <SelectItem value="3">COMPS 8</SelectItem>
-                    <SelectItem value="4">COMPS 11</SelectItem>
-                    <SelectItem value="5">COMPS 12</SelectItem>
-                    <SelectItem value="6">COMPS 13</SelectItem>
+                    {compTypes.map((compType) => (
+                      <SelectItem key={compType.id} value={compType.id}>
+                        {compType.codigo}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
