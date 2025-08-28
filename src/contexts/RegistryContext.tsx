@@ -55,6 +55,134 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
     loadData();
   }, []);
 
+  // Real-time subscriptions
+  useEffect(() => {
+    const compTypesChannel = supabase
+      .channel('comp-types-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comp_types'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newCompType: CompType = {
+              id: payload.new.id,
+              codigo: payload.new.codigo,
+              nome: payload.new.nome,
+              descricao: payload.new.descricao,
+              ativo: payload.new.ativo,
+              criadoEm: payload.new.created_at
+            };
+            setCompTypes(prev => [newCompType, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setCompTypes(prev => prev.map(compType => 
+              compType.id === payload.new.id 
+                ? {
+                    ...compType,
+                    codigo: payload.new.codigo,
+                    nome: payload.new.nome,
+                    descricao: payload.new.descricao,
+                    ativo: payload.new.ativo
+                  }
+                : compType
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setCompTypes(prev => prev.filter(compType => compType.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    const waitersChannel = supabase
+      .channel('waiters-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'waiters'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newWaiter: Waiter = {
+              id: payload.new.id,
+              nome: payload.new.nome,
+              matricula: payload.new.matricula,
+              ativo: payload.new.ativo,
+              criadoEm: payload.new.created_at
+            };
+            setWaiters(prev => [newWaiter, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setWaiters(prev => prev.map(waiter => 
+              waiter.id === payload.new.id 
+                ? {
+                    ...waiter,
+                    nome: payload.new.nome,
+                    matricula: payload.new.matricula,
+                    ativo: payload.new.ativo
+                  }
+                : waiter
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setWaiters(prev => prev.filter(waiter => waiter.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    const managersChannel = supabase
+      .channel('managers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'managers'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newManager: Manager = {
+              id: payload.new.id,
+              nome: payload.new.nome,
+              usuario: payload.new.usuario,
+              senha: payload.new.senha,
+              tipoAcesso: payload.new.tipo_acesso as "qualquer_ip" | "ip_especifico",
+              ipPermitido: payload.new.ip_permitido,
+              ativo: payload.new.ativo,
+              criadoEm: payload.new.created_at
+            };
+            setManagers(prev => [newManager, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setManagers(prev => prev.map(manager => 
+              manager.id === payload.new.id 
+                ? {
+                    ...manager,
+                    nome: payload.new.nome,
+                    usuario: payload.new.usuario,
+                    senha: payload.new.senha,
+                    tipoAcesso: payload.new.tipo_acesso as "qualquer_ip" | "ip_especifico",
+                    ipPermitido: payload.new.ip_permitido,
+                    ativo: payload.new.ativo
+                  }
+                : manager
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setManagers(prev => prev.filter(manager => manager.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(compTypesChannel);
+      supabase.removeChannel(waitersChannel);
+      supabase.removeChannel(managersChannel);
+    };
+  }, []);
+
   const loadData = async () => {
     try {
       // Load comp types

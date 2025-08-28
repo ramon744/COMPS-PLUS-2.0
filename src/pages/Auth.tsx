@@ -5,17 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Loader2, Lock, Mail, User } from 'lucide-react';
+import { AlertCircle, Loader2, Lock, Mail } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
-  const { signIn, signUp, isLoading, user } = useAuth();
+  const [showDemoInfo, setShowDemoInfo] = useState(false);
+  const { signIn, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,15 +36,13 @@ const Auth = () => {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    
-    const { error } = await signUp(email, password, name);
-    if (error) {
-      setError(error);
+  const fillDemoCredentials = (userType: 'alice' | 'roberto') => {
+    if (userType === 'alice') {
+      setEmail('alice');
+      setPassword('123456');
     } else {
-      setIsSignUp(false);
+      setEmail('roberto');
+      setPassword('123456');
     }
   };
 
@@ -58,33 +54,15 @@ const Auth = () => {
             <Lock className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Bem-vindo</h1>
-          <p className="text-muted-foreground">
-            {isSignUp ? 'Crie sua conta para acessar o sistema' : 'Faça login para acessar o sistema'}
-          </p>
+          <p className="text-muted-foreground">Faça login para acessar o sistema</p>
         </div>
 
         <Card className="shadow-card">
           <CardHeader>
-            <Tabs value={isSignUp ? 'signup' : 'signin'} onValueChange={(value) => setIsSignUp(value === 'signup')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Login</TabsTrigger>
-                <TabsTrigger value="signup">Cadastro</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin">
-                <CardTitle>Entrar</CardTitle>
-                <CardDescription>
-                  Entre com suas credenciais para continuar
-                </CardDescription>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <CardTitle>Criar Conta</CardTitle>
-                <CardDescription>
-                  Crie uma nova conta para acessar o sistema
-                </CardDescription>
-              </TabsContent>
-            </Tabs>
+            <CardTitle>Login</CardTitle>
+            <CardDescription>
+              Entre com suas credenciais para continuar
+            </CardDescription>
           </CardHeader>
           
           <CardContent>
@@ -95,119 +73,103 @@ const Auth = () => {
               </Alert>
             )}
 
-            {isSignUp ? (
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Digite seu nome completo"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Usuário</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="text"
+                    placeholder="Digite seu usuário"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Digite seu email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                </div>
+              <Button
+                type="submit"
+                className="w-full shadow-button"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                {isLoading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </form>
 
-                <Button
-                  type="submit"
-                  className="w-full shadow-button"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {isLoading ? 'Criando conta...' : 'Criar Conta'}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Digite seu email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
+            <div className="mt-6 pt-4 border-t border-border">
+              <Button
+                variant="outline"
+                className="w-full mb-2"
+                onClick={() => setShowDemoInfo(!showDemoInfo)}
+                type="button"
+              >
+                Ver credenciais de demonstração
+              </Button>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full shadow-button"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {isLoading ? 'Entrando...' : 'Entrar'}
-                </Button>
-              </form>
-            )}
+              {showDemoInfo && (
+                <Alert className="mt-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="space-y-2">
+                    <p className="font-medium">Credenciais de demonstração:</p>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => fillDemoCredentials('alice')}
+                          type="button"
+                        >
+                          Alice
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          alice / 123456
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => fillDemoCredentials('roberto')}
+                          type="button"
+                        >
+                          Roberto
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          roberto / 123456
+                        </span>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Sistema com autenticação Supabase.<br />
-                Dados salvos no banco de dados em tempo real.
+                Sistema de autenticação integrado com Supabase.<br />
+                Para criar novos usuários, utilize a aba Cadastros → Gerentes.
               </p>
             </div>
           </CardContent>

@@ -31,6 +31,71 @@ export function CompProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('comps-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comps'
+        },
+        (payload) => {
+          console.log('Real-time change received:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            // Transform the new comp data
+            const newComp: Comp = {
+              id: payload.new.id,
+              compTypeId: payload.new.comp_type_id,
+              waiterId: payload.new.waiter_id,
+              valorCentavos: payload.new.valor_centavos,
+              motivo: payload.new.motivo,
+              fotoUrl: payload.new.foto_url,
+              dataHoraLocal: payload.new.data_hora_local,
+              dataHoraUtc: payload.new.data_hora_utc,
+              diaOperacional: payload.new.dia_operacional,
+              turno: payload.new.turno as "manha" | "noite",
+              gerenteId: payload.new.gerente_id,
+              status: payload.new.status as "ativo" | "cancelado",
+              canceladoMotivo: payload.new.cancelado_motivo,
+              criadoEm: payload.new.created_at,
+              atualizadoEm: payload.new.updated_at
+            };
+            
+            setComps(prev => [newComp, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setComps(prev => prev.map(comp => 
+              comp.id === payload.new.id 
+                ? {
+                    ...comp,
+                    compTypeId: payload.new.comp_type_id,
+                    waiterId: payload.new.waiter_id,
+                    valorCentavos: payload.new.valor_centavos,
+                    motivo: payload.new.motivo,
+                    fotoUrl: payload.new.foto_url,
+                    status: payload.new.status,
+                    canceladoMotivo: payload.new.cancelado_motivo,
+                    atualizadoEm: payload.new.updated_at
+                  }
+                : comp
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setComps(prev => prev.filter(comp => comp.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const loadComps = async () => {
     if (!user) return;
     
