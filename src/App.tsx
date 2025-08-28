@@ -12,7 +12,7 @@ import Settings from "./pages/Settings";
 import Management from "./pages/Management"; 
 import Reports from "./pages/Reports";
 import Closing from "./pages/Closing";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +27,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={<Auth />} />
                 <Route path="/" element={
                   <ProtectedRoute>
                     <Index />

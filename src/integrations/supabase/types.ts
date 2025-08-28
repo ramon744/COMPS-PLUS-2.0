@@ -14,7 +14,288 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          acao: string
+          created_em_local: string
+          created_em_utc: string
+          entidade: string
+          entidade_id: string
+          id: string
+          payload_resumo: string
+          user_id: string
+        }
+        Insert: {
+          acao: string
+          created_em_local: string
+          created_em_utc?: string
+          entidade: string
+          entidade_id: string
+          id?: string
+          payload_resumo: string
+          user_id: string
+        }
+        Update: {
+          acao?: string
+          created_em_local?: string
+          created_em_utc?: string
+          entidade?: string
+          entidade_id?: string
+          id?: string
+          payload_resumo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      closings: {
+        Row: {
+          created_at: string
+          dia_operacional: string
+          enviado_para: string[]
+          fechado_em_local: string
+          fechado_por: string
+          id: string
+          observacao: string | null
+          periodo_fim_local: string
+          periodo_inicio_local: string
+          total_qtd: number
+          total_valor_centavos: number
+          updated_at: string
+          url_csv: string | null
+          url_pdf: string | null
+          versao: number
+        }
+        Insert: {
+          created_at?: string
+          dia_operacional: string
+          enviado_para?: string[]
+          fechado_em_local: string
+          fechado_por: string
+          id?: string
+          observacao?: string | null
+          periodo_fim_local: string
+          periodo_inicio_local: string
+          total_qtd: number
+          total_valor_centavos: number
+          updated_at?: string
+          url_csv?: string | null
+          url_pdf?: string | null
+          versao?: number
+        }
+        Update: {
+          created_at?: string
+          dia_operacional?: string
+          enviado_para?: string[]
+          fechado_em_local?: string
+          fechado_por?: string
+          id?: string
+          observacao?: string | null
+          periodo_fim_local?: string
+          periodo_inicio_local?: string
+          total_qtd?: number
+          total_valor_centavos?: number
+          updated_at?: string
+          url_csv?: string | null
+          url_pdf?: string | null
+          versao?: number
+        }
+        Relationships: []
+      }
+      comp_types: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          descricao: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          descricao: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comps: {
+        Row: {
+          cancelado_motivo: string | null
+          comp_type_id: string
+          created_at: string
+          data_hora_local: string
+          data_hora_utc: string
+          dia_operacional: string
+          foto_url: string | null
+          gerente_id: string
+          id: string
+          motivo: string
+          status: Database["public"]["Enums"]["comp_status"]
+          turno: Database["public"]["Enums"]["shift_type"]
+          updated_at: string
+          valor_centavos: number
+          waiter_id: string
+        }
+        Insert: {
+          cancelado_motivo?: string | null
+          comp_type_id: string
+          created_at?: string
+          data_hora_local: string
+          data_hora_utc: string
+          dia_operacional: string
+          foto_url?: string | null
+          gerente_id: string
+          id?: string
+          motivo: string
+          status?: Database["public"]["Enums"]["comp_status"]
+          turno: Database["public"]["Enums"]["shift_type"]
+          updated_at?: string
+          valor_centavos: number
+          waiter_id: string
+        }
+        Update: {
+          cancelado_motivo?: string | null
+          comp_type_id?: string
+          created_at?: string
+          data_hora_local?: string
+          data_hora_utc?: string
+          dia_operacional?: string
+          foto_url?: string | null
+          gerente_id?: string
+          id?: string
+          motivo?: string
+          status?: Database["public"]["Enums"]["comp_status"]
+          turno?: Database["public"]["Enums"]["shift_type"]
+          updated_at?: string
+          valor_centavos?: number
+          waiter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comps_comp_type_id_fkey"
+            columns: ["comp_type_id"]
+            isOneToOne: false
+            referencedRelation: "comp_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comps_waiter_id_fkey"
+            columns: ["waiter_id"]
+            isOneToOne: false
+            referencedRelation: "waiters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      managers: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          ip_permitido: string | null
+          nome: string
+          senha: string
+          tipo_acesso: Database["public"]["Enums"]["access_type"]
+          updated_at: string
+          usuario: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ip_permitido?: string | null
+          nome: string
+          senha: string
+          tipo_acesso?: Database["public"]["Enums"]["access_type"]
+          updated_at?: string
+          usuario: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ip_permitido?: string | null
+          nome?: string
+          senha?: string
+          tipo_acesso?: Database["public"]["Enums"]["access_type"]
+          updated_at?: string
+          usuario?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          role: Database["public"]["Enums"]["user_role"]
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          id: string
+          nome: string
+          role?: Database["public"]["Enums"]["user_role"]
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      waiters: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          matricula: string | null
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          matricula?: string | null
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          matricula?: string | null
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +304,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      access_type: "qualquer_ip" | "ip_especifico"
+      comp_status: "ativo" | "cancelado"
+      shift_type: "manha" | "noite"
+      user_role: "manager_day" | "manager_night" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +434,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_type: ["qualquer_ip", "ip_especifico"],
+      comp_status: ["ativo", "cancelado"],
+      shift_type: ["manha", "noite"],
+      user_role: ["manager_day", "manager_night", "admin"],
+    },
   },
 } as const

@@ -12,7 +12,7 @@ const Login = () => {
   const [usuario, setUsuario] = useState('');
   const [senha, setSenha] = useState('');
   const [showDemoInfo, setShowDemoInfo] = useState(false);
-  const { login, isLoading } = useAuth();
+  const { signIn, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -20,8 +20,8 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(usuario, senha);
-    if (success) {
+    const { error } = await signIn(usuario, senha);
+    if (!error) {
       navigate(from, { replace: true });
     }
   };

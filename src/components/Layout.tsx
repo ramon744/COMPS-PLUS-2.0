@@ -21,10 +21,10 @@ interface LayoutProps {
 export function Layout({ children, title, showBack, onBack }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
 
@@ -82,7 +82,7 @@ export function Layout({ children, title, showBack, onBack }: LayoutProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <div className="px-3 py-2 border-b border-border">
-                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-sm font-medium">{user?.user_metadata?.name || user?.email}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <DropdownMenuItem onClick={handleLogout}>

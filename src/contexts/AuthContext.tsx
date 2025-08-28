@@ -1,17 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getUserIP, isIPAuthorized } from '@/utils/ipUtils';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
 
 interface AuthContextType {
   user: User | null;
-  login: (usuario: string, senha: string) => Promise<boolean>;
-  logout: () => void;
+  session: Session | null;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -19,93 +16,76 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored session on mount
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (usuario: string, senha: string): Promise<boolean> => {
-    setIsLoading(true);
+  const signUp = async (email: string, password: string, name: string) => {
+    const redirectUrl = `${window.location.origin}/`;
     
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Use managers from localStorage directly
-      const storedManagers = localStorage.getItem('registry-managers');
-      let managers = [];
-      
-      if (storedManagers) {
-        try {
-          managers = JSON.parse(storedManagers);
-        } catch (error) {
-          console.error('Error loading managers:', error);
-          toast.error('Erro ao carregar dados dos gerentes');
-          setIsLoading(false);
-          return false;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name: name
         }
       }
-      
-      // Find manager with matching usuario and senha
-      const manager = managers.find((m: any) => m.usuario === usuario && m.senha === senha && m.ativo);
-      
-      if (manager) {
-        // Verificar IP se necessário
-        if (manager.tipoAcesso === "ip_especifico" && manager.ipPermitido) {
-          try {
-            const userIP = await getUserIP();
-            if (!userIP) {
-              toast.error('Não foi possível verificar seu IP. Tente novamente.');
-              setIsLoading(false);
-              return false;
-            }
-            
-            if (!isIPAuthorized(userIP, manager.ipPermitido)) {
-              toast.error(`Acesso negado. Você deve estar conectado ao IP ${manager.ipPermitido} para fazer login.`);
-              setIsLoading(false);
-              return false;
-            }
-          } catch (error) {
-            console.error('Erro na verificação de IP:', error);
-            toast.error('Erro na verificação de IP. Tente novamente.');
-            setIsLoading(false);
-            return false;
-          }
-        }
-        
-        const userData = { id: manager.id, email: manager.usuario, name: manager.nome };
-        setUser(userData);
-        localStorage.setItem('auth_user', JSON.stringify(userData));
-        toast.success('Login realizado com sucesso!');
-        setIsLoading(false);
-        return true;
-      } else {
-        toast.error('Usuário ou senha incorretos');
-        setIsLoading(false);
-        return false;
-      }
-    } catch (error) {
-      console.error('Erro durante o login:', error);
-      toast.error('Erro interno. Tente novamente.');
-      setIsLoading(false);
-      return false;
+    });
+
+    if (error) {
+      return { error: error.message };
     }
+
+    toast.success('Conta criada com sucesso! Verifique seu email.');
+    return { error: null };
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('auth_user');
-    toast.success('Logout realizado com sucesso!');
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    toast.success('Login realizado com sucesso!');
+    return { error: null };
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error('Erro ao fazer logout');
+    } else {
+      toast.success('Logout realizado com sucesso!');
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
