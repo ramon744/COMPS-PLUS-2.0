@@ -23,17 +23,26 @@ export function useReports() {
     const loadManagerProfiles = async () => {
       try {
         // Get unique manager IDs from comps
-        const managerIds = [...new Set(comps.map(comp => comp.gerenteId))];
+        const managerIds = [...new Set(comps.map(comp => comp.gerenteId))].filter(Boolean);
         
-        if (managerIds.length === 0) return;
+        if (managerIds.length === 0) {
+          console.log('No manager IDs found in comps');
+          return;
+        }
+
+        console.log('Loading profiles for manager IDs:', managerIds);
 
         const { data, error } = await supabase
           .from('profiles')
           .select('id, nome, email')
           .in('id', managerIds);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error loading manager profiles:', error);
+          throw error;
+        }
         
+        console.log('Loaded manager profiles:', data);
         setManagerProfiles(data || []);
       } catch (error) {
         console.error('Error loading manager profiles:', error);

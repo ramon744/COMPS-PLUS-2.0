@@ -38,15 +38,27 @@ const Index = () => {
         if (todayComps.length === 0) return;
         
         // Get unique manager IDs from comps
-        const managerIds = [...new Set(todayComps.map(comp => comp.gerenteId))];
+        const managerIds = [...new Set(todayComps.map(comp => comp.gerenteId))].filter(Boolean);
+        
+        console.log('Loading profiles for manager IDs:', managerIds);
+        console.log('Today comps gerente IDs:', todayComps.map(comp => ({ id: comp.id, gerenteId: comp.gerenteId })));
+
+        if (managerIds.length === 0) {
+          console.log('No manager IDs found in today comps');
+          return;
+        }
         
         const { data, error } = await supabase
           .from('profiles')
           .select('id, nome, email')
           .in('id', managerIds);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error loading manager profiles:', error);
+          throw error;
+        }
         
+        console.log('Loaded manager profiles:', data);
         setManagerProfiles(data || []);
       } catch (error) {
         console.error('Error loading manager profiles:', error);
