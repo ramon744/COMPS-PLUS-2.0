@@ -76,10 +76,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error('Erro ao fazer logout');
-    } else {
+    try {
+      // Check if there's a current session before attempting logout
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // No active session, just clear local state
+        setSession(null);
+        setUser(null);
+        toast.success('Logout realizado com sucesso!');
+        return;
+      }
+
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        // Even if there's an error, clear local state
+        setSession(null);
+        setUser(null);
+        toast.success('Logout realizado com sucesso!');
+      } else {
+        toast.success('Logout realizado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Clear local state anyway
+      setSession(null);
+      setUser(null);
       toast.success('Logout realizado com sucesso!');
     }
   };
