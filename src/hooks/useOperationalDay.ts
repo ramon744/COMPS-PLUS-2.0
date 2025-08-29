@@ -36,7 +36,7 @@ export function useOperationalDay() {
       });
     };
     
-    return `${formatDate(startDate)} a ${formatDate(endDate)}`;
+    return `${formatDate(startDate)} às ${formatDate(endDate)}`;
   };
 
   const getCurrentTurn = () => {
