@@ -241,15 +241,7 @@ export type Database = {
           updated_at?: string
           usuario?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_managers_profile"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {

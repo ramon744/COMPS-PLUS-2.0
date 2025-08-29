@@ -119,32 +119,46 @@ export default function Management() {
         description: "As informações foram salvas com sucesso.",
       });
     } else {
-      // Create user in Supabase first if creating new manager
-      if (manager.usuario && manager.senha && manager.nome) {
-        const { error } = await signUp(manager.usuario, manager.senha, manager.nome);
-        
-        if (error) {
+      try {
+        // Primeiro adiciona o gerente na base
+        await addManager({
+          nome: manager.nome || "",
+          usuario: manager.usuario || "",
+          senha: manager.senha || "",
+          tipoAcesso: manager.tipoAcesso || "qualquer_ip",
+          ipPermitido: manager.ipPermitido,
+          ativo: true,
+        });
+
+        // Depois tenta criar a conta de usuário
+        if (manager.usuario && manager.senha && manager.nome) {
+          const { error } = await signUp(manager.usuario, manager.senha, manager.nome);
+          
+          if (error) {
+            toast({
+              title: "Gerente criado, mas erro na conta",
+              description: `Gerente adicionado ao sistema, mas houve erro na criação da conta: ${error}`,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Gerente criado com sucesso",
+              description: "Gerente adicionado e conta criada no sistema de autenticação.",
+            });
+          }
+        } else {
           toast({
-            title: "Erro ao criar conta",
-            description: error,
-            variant: "destructive",
+            title: "Gerente criado",
+            description: "Gerente adicionado ao sistema.",
           });
-          return;
         }
+      } catch (error) {
+        toast({
+          title: "Erro ao criar gerente",
+          description: "Houve um erro ao adicionar o gerente.",
+          variant: "destructive",
+        });
       }
-      
-      addManager({
-        nome: manager.nome || "",
-        usuario: manager.usuario || "",
-        senha: manager.senha || "",
-        tipoAcesso: manager.tipoAcesso || "qualquer_ip",
-        ipPermitido: manager.ipPermitido,
-        ativo: true,
-      });
-      toast({
-        title: "Gerente criado",
-        description: "Novo gerente adicionado com sucesso. Conta criada no sistema de autenticação.",
-      });
     }
     setEditingManager(null);
     setIsDialogOpen(false);
