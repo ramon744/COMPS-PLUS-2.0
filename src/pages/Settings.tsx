@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,101 +8,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Mail, Settings2, Users, FileText, Send, Globe, TestTube } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import { useWebhook } from "@/hooks/useWebhook";
-
-interface ConfigData {
-  emailsDestino: string[];
-  horaCorte: string;
-  logoUrl: string;
-  textoEmailPadrao: string;
-  manterTipoSelecionado: boolean;
-  manterWaiterSelecionado: boolean;
-  focoAposSalvar: "valor" | "motivo";
-  hapticFeedback: boolean;
-  valorMaximoComp: number;
-  webhookUrl: string;
-  webhookAtivo: boolean;
-}
+import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const { config, setConfig, saveSettings, isLoading } = useSettings();
+  const { sendWebhook } = useWebhook();
   const { toast } = useToast();
-  const { config: webhookConfig, saveConfig: saveWebhookConfig, sendWebhook } = useWebhook();
   
-  const [config, setConfig] = useState<ConfigData>({
-    emailsDestino: ["proprietario@restaurante.com"],
-    horaCorte: "05:00",
-    logoUrl: "",
-    textoEmailPadrao: "Segue em anexo o relatório de COMPs do dia operacional.",
-    manterTipoSelecionado: true,
-    manterWaiterSelecionado: false,
-    focoAposSalvar: "valor",
-    hapticFeedback: true,
-    valorMaximoComp: 999999999,
-    webhookUrl: "",
-    webhookAtivo: false,
-  });
-
   const [emailInput, setEmailInput] = useState("");
 
-  // Carregar configurações do localStorage apenas na inicialização
-  useEffect(() => {
-    const savedConfig = localStorage.getItem('app-settings');
-    if (savedConfig) {
-      const parsedConfig = JSON.parse(savedConfig);
-      setConfig(parsedConfig);
-    }
-  }, []);
-
-  // Sincronizar com configuração do webhook apenas na inicialização
-  useEffect(() => {
-    setConfig(prev => ({
-      ...prev,
-      webhookUrl: webhookConfig.url,
-      webhookAtivo: webhookConfig.ativo,
-    }));
-  }, [webhookConfig.url, webhookConfig.ativo]);
-
-  // Função estável para salvar webhook
-  const stableSaveWebhookConfig = useCallback((webhookData: { url: string; ativo: boolean }) => {
-    saveWebhookConfig(webhookData);
-  }, [saveWebhookConfig]);
-
-  // Salvar automaticamente as configurações quando mudarem (exceto primeira renderização)
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  useEffect(() => {
-    if (!isInitialized) {
-      setIsInitialized(true);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      localStorage.setItem('app-settings', JSON.stringify(config));
-      // Também salvar configuração do webhook
-      stableSaveWebhookConfig({
-        url: config.webhookUrl,
-        ativo: config.webhookAtivo,
-      });
-    }, 500); // Debounce para evitar muitas escritas
-
-    return () => clearTimeout(timer);
-  }, [config, stableSaveWebhookConfig, isInitialized]);
-
-  const handleSave = () => {
-    // Salvar todas as configurações no localStorage
-    localStorage.setItem('app-settings', JSON.stringify(config));
-    
-    // Salvar configuração do webhook
-    saveWebhookConfig({
-      url: config.webhookUrl,
-      ativo: config.webhookAtivo,
-    });
-    
-    toast({
-      title: "Configurações salvas",
-      description: "Suas configurações foram atualizadas com sucesso.",
-    });
+  const handleSave = async () => {
+    await saveSettings(config);
   };
 
   const handleTestWebhook = async () => {
@@ -270,6 +188,21 @@ export default function Settings() {
       emailsDestino: prev.emailsDestino.filter(e => e !== email)
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Layout title="Configurações">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando configurações...</p>
+            </div>
+          </div>
+        </Layout>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

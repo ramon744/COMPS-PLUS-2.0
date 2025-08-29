@@ -14,6 +14,7 @@ import {
 import { MoneyInput } from "./MoneyInput";
 import { Save, SaveAll } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import { CompType, Waiter } from "@/types";
 
 interface CompFormData {
@@ -29,8 +30,6 @@ interface CompFormProps {
   onSubmit: (data: CompFormData, saveAndNew: boolean) => void;
   onCancel: () => void;
   defaultValues?: Partial<CompFormData>;
-  keepTypeSelected?: boolean;
-  keepWaiterSelected?: boolean;
 }
 
 export function CompForm({
@@ -39,10 +38,9 @@ export function CompForm({
   onSubmit,
   onCancel,
   defaultValues,
-  keepTypeSelected = true,
-  keepWaiterSelected = false,
 }: CompFormProps) {
   const { toast } = useToast();
+  const { config } = useSettings();
   const [formData, setFormData] = useState<CompFormData>({
     compTypeId: defaultValues?.compTypeId || "",
     waiterId: defaultValues?.waiterId || "",
@@ -85,10 +83,10 @@ export function CompForm({
     onSubmit(formData, saveAndNew);
 
     if (saveAndNew) {
-      // Reset form but keep selected values based on preferences
+      // Reset form but keep selected values based on preferences from settings
       setFormData({
-        compTypeId: keepTypeSelected ? formData.compTypeId : "",
-        waiterId: keepWaiterSelected ? formData.waiterId : "",
+        compTypeId: config.manterTipoSelecionado ? formData.compTypeId : "",
+        waiterId: config.manterWaiterSelecionado ? formData.waiterId : "",
         value: 0,
         motivo: "",
       });

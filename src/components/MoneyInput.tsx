@@ -1,6 +1,7 @@
 import { useState, useEffect, forwardRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSettings } from "@/hooks/useSettings";
 
 interface MoneyInputProps {
   value?: number; // Value in cents
@@ -13,6 +14,7 @@ interface MoneyInputProps {
 
 export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
   ({ value = 0, onChange, label, placeholder = "0,00", error, required }, ref) => {
+    const { config } = useSettings();
     const [displayValue, setDisplayValue] = useState("");
 
     // Format value from cents to BRL display
@@ -40,8 +42,10 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
       const input = e.target.value;
       const digitsOnly = input.replace(/\D/g, "");
       
-      if (digitsOnly.length <= 9) { // Max 9,999,999.99
-        const cents = parseValue(input);
+      const cents = parseValue(input);
+      
+      // Use max value from settings
+      if (cents <= config.valorMaximoComp) {
         const formatted = formatValue(cents);
         setDisplayValue(formatted);
         onChange?.(cents);

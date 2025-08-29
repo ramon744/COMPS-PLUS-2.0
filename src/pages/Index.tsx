@@ -216,8 +216,6 @@ const Index = () => {
           waiters={getActiveWaiters()}
           onSubmit={handleCompSubmit}
           onCancel={handleBackToDashboard}
-          keepTypeSelected={false}
-          keepWaiterSelected={false}
         />
       )}
 
