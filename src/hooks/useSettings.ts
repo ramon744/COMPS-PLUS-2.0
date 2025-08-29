@@ -82,17 +82,32 @@ export function useSettings() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      // Primeiro tenta fazer update
+      const { error: updateError } = await supabase
         .from('settings')
-        .upsert({
-          user_id: user.id,
-          config_key: 'app_settings',
+        .update({
           config_value: newConfig as any,
-        });
+        })
+        .eq('user_id', user.id)
+        .eq('config_key', 'app_settings');
 
-      if (error) {
-        console.error('Erro ao salvar configurações:', error);
-        throw error;
+      // Se não conseguiu fazer update (registro não existe), faz insert
+      if (updateError?.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('settings')
+          .insert({
+            user_id: user.id,
+            config_key: 'app_settings',
+            config_value: newConfig as any,
+          });
+
+        if (insertError) {
+          console.error('Erro ao inserir configurações:', insertError);
+          throw insertError;
+        }
+      } else if (updateError) {
+        console.error('Erro ao atualizar configurações:', updateError);
+        throw updateError;
       }
 
       setConfig(newConfig);
