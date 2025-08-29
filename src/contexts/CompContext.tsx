@@ -212,7 +212,11 @@ export function CompProvider({ children }: { children: ReactNode }) {
 
       setComps(prev => prev.map(comp => 
         comp.id === id 
-          ? { ...comp, ...updatedData, atualizadoEm: new Date().toISOString() }
+          ? { 
+              ...comp, 
+              ...updatedData, 
+              atualizadoEm: new Date().toLocaleString("sv-SE", { timeZone: "America/Sao_Paulo" }).replace(' ', 'T') + 'Z'
+            }
           : comp
       ));
       toast.success('COMP atualizado com sucesso!');

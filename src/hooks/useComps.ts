@@ -57,7 +57,14 @@ export function useComps() {
   const getReportsData = () => {
     const allComps = context.comps;
     const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
+      // Use Brazil timezone for date calculations
+      const brazilTimeString = new Date().toLocaleString("en-CA", { 
+        timeZone: "America/Sao_Paulo",
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const date = new Date(brazilTimeString);
       date.setDate(date.getDate() - i);
       return date.toISOString().split('T')[0];
     }).reverse();

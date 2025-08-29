@@ -2,11 +2,18 @@ import { useMemo } from "react";
 
 export function useOperationalDay() {
   const getBrazilTime = () => {
-    const now = new Date();
-    // Convert to Brazil time (UTC-3)
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const brazilTime = new Date(utc + (-3 * 3600000));
-    return brazilTime;
+    // Use native JavaScript API for Brazil timezone (handles daylight saving automatically)
+    const brazilTimeString = new Date().toLocaleString("en-CA", { 
+      timeZone: "America/Sao_Paulo",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    return new Date(brazilTimeString);
   };
 
   const currentOperationalDay = useMemo(() => {
