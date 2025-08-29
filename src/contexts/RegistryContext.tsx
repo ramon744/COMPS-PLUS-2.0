@@ -561,6 +561,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
   const getActiveWaiters = () => {
     return waiters.filter(waiter => waiter.ativo);
   };
