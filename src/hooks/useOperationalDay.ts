@@ -2,18 +2,9 @@ import { useMemo } from "react";
 
 export function useOperationalDay() {
   const getBrazilTime = () => {
-    // Use native JavaScript API for Brazil timezone (handles daylight saving automatically)
-    const brazilTimeString = new Date().toLocaleString("en-CA", { 
-      timeZone: "America/Sao_Paulo",
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-    return new Date(brazilTimeString);
+    // Get current time in Brazil timezone
+    const now = new Date();
+    return new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   };
 
   const currentOperationalDay = useMemo(() => {
@@ -23,10 +14,18 @@ export function useOperationalDay() {
     if (brazilTime.getHours() < 5) {
       const previousDay = new Date(brazilTime);
       previousDay.setDate(previousDay.getDate() - 1);
-      return previousDay.toISOString().split('T')[0];
+      // Format as YYYY-MM-DD using Brazil timezone
+      const year = previousDay.getFullYear();
+      const month = String(previousDay.getMonth() + 1).padStart(2, '0');
+      const day = String(previousDay.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
     
-    return brazilTime.toISOString().split('T')[0];
+    // Format as YYYY-MM-DD using Brazil timezone
+    const year = brazilTime.getFullYear();
+    const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
+    const day = String(brazilTime.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }, []);
 
   const formatOperationalDayDisplay = (date: string) => {
