@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRegistry } from "@/contexts/RegistryContext";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { Comp } from "@/types";
 
 const Index = () => {
   const { user } = useAuth();
@@ -28,8 +29,28 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [managerProfiles, setManagerProfiles] = useState<any[]>([]);
+  const [todayComps, setTodayComps] = useState<Comp[]>([]);
 
-  const todayComps = getTodayComps();
+  // Initialize today's comps when contexts are ready
+  useEffect(() => {
+    try {
+      const comps = getTodayComps();
+      setTodayComps(comps);
+    } catch (error) {
+      console.error('Error getting today comps:', error);
+      setTodayComps([]);
+    }
+  }, [getTodayComps]);
+
+  // Update today's comps when data changes in the context
+  useEffect(() => {
+    try {
+      const comps = getTodayComps();
+      setTodayComps(comps);
+    } catch (error) {
+      console.error('Error updating today comps:', error);
+    }
+  }, [getTodayComps]);
 
   // Load manager profiles from Supabase
   useEffect(() => {
