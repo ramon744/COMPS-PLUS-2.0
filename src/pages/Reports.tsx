@@ -46,7 +46,7 @@ export default function Reports() {
   } = useReports();
   const { user } = useAuth();
   const { currentOperationalDay } = useOperationalDay();
-  const { compTypes } = useRegistry();
+  const { compTypes, isLoading: registryLoading } = useRegistry();
   
   const [dateRange, setDateRange] = useState({
     start: currentOperationalDay,
@@ -116,6 +116,21 @@ export default function Reports() {
     console.log(`Exportando relatório em ${format.toUpperCase()}`);
     // Implementar exportação
   };
+
+  if (registryLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Layout title="Relatórios">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando dados...</p>
+            </div>
+          </div>
+        </Layout>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

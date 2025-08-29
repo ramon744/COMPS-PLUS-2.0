@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CompType, Waiter, Manager } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface RegistryContextType {
   compTypes: CompType[];
   waiters: Waiter[];
   managers: Manager[];
+  isLoading: boolean;
   addCompType: (compType: Omit<CompType, 'id' | 'criadoEm'>) => Promise<void>;
   updateCompType: (id: string, compType: Partial<CompType>) => Promise<void>;
   toggleCompTypeStatus: (id: string) => Promise<void>;
@@ -49,14 +51,22 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
   const [compTypes, setCompTypes] = useState<CompType[]>([]);
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Load data from Supabase on mount
+  // Load data from Supabase when user is authenticated
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   // Real-time subscriptions
   useEffect(() => {
+    if (!user) return;
+    
     const compTypesChannel = supabase
       .channel('comp-types-changes')
       .on(
@@ -181,9 +191,12 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(waitersChannel);
       supabase.removeChannel(managersChannel);
     };
-  }, []);
+  }, [user]);
 
   const loadData = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
     try {
       // Load comp types
       const { data: compTypesData, error: compTypesError } = await supabase
@@ -245,6 +258,8 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
       setCompTypes(initialCompTypes);
       setWaiters(initialWaiters);
       setManagers(initialManagers);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -577,6 +592,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
     compTypes,
     waiters,
     managers,
+    isLoading,
     addCompType,
     updateCompType,
     toggleCompTypeStatus,

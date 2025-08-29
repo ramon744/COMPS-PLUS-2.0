@@ -45,6 +45,7 @@ export default function Management() {
     compTypes,
     waiters,
     managers,
+    isLoading,
     addCompType,
     updateCompType,
     toggleCompTypeStatus,
@@ -196,6 +197,21 @@ export default function Management() {
     setItemToDelete({ id, type, name });
     setDeleteConfirmOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Layout title="Cadastros">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando dados...</p>
+            </div>
+          </div>
+        </Layout>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
