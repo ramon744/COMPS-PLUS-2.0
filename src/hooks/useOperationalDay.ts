@@ -31,11 +31,11 @@ export function useOperationalDay() {
     const formatDate = (date: Date) => {
       return date.toLocaleDateString('pt-BR', {
         day: '2-digit',
-        month: '2-digit'
+        month: '2-digit',
+        year: 'numeric'
       });
     };
     
-    // Dia operacional: das 05:00 do startDate até 04:59 do endDate
     return `${formatDate(startDate)} às ${formatDate(endDate)}`;
   };
 
