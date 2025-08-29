@@ -37,6 +37,7 @@ import { useComps } from "@/hooks/useComps";
 import { useWebhook } from "@/hooks/useWebhook";
 import { useOperationalDay } from "@/hooks/useOperationalDay";
 import { useRegistry } from "@/contexts/RegistryContext";
+import { useSettings } from "@/hooks/useSettings";
 
 export default function Closing() {
   const { toast } = useToast();
@@ -44,29 +45,13 @@ export default function Closing() {
   const { sendWebhook } = useWebhook();
   const { currentOperationalDay, formatOperationalDayDisplay } = useOperationalDay();
   const { getActiveManagers } = useRegistry();
+  const { config } = useSettings();
   const [isClosing, setIsClosing] = useState(false);
   const [showManagerForm, setShowManagerForm] = useState(false);
   const [morningManager, setMorningManager] = useState("");
   const [nightManager, setNightManager] = useState("");
   const [reportDate, setReportDate] = useState(currentOperationalDay);
   const [progress, setProgress] = useState(0);
-  
-  // Carregar configurações de email do localStorage
-  const [emailConfig, setEmailConfig] = useState({
-    emailsDestino: ["proprietario@restaurante.com", "gerente@restaurante.com"],
-    textoEmailPadrao: "Segue em anexo o relatório de COMPs do dia operacional."
-  });
-
-  useEffect(() => {
-    const savedConfig = localStorage.getItem('app-settings');
-    if (savedConfig) {
-      const parsedConfig = JSON.parse(savedConfig);
-      setEmailConfig({
-        emailsDestino: parsedConfig.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"],
-        textoEmailPadrao: parsedConfig.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional."
-      });
-    }
-  }, []);
 
   // Get real data from context
   const closingSummary = getClosingData();
@@ -177,8 +162,9 @@ export default function Closing() {
       // 2. DEPOIS: Envio dos dados gerais do relatório (que dispara o email)
       // Preparar campos de email (máximo 5)
       const emailFields: { [key: string]: string } = {};
+      const emailsDestino = config.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"];
       for (let i = 1; i <= 5; i++) {
-        emailFields[`email_destino${i}`] = emailConfig.emailsDestino[i - 1] || "";
+        emailFields[`email_destino${i}`] = emailsDestino[i - 1] || "";
       }
       
       const generalData = {
@@ -189,7 +175,7 @@ export default function Closing() {
         Gerente_noturno: nightManager,
         ...compTypePercentages,
         ...emailFields,
-        Texto_padrao_email: emailConfig.textoEmailPadrao
+        Texto_padrao_email: config.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional."
       };
 
       await sendWebhook(generalData);
@@ -218,6 +204,8 @@ export default function Closing() {
 
   const canClose = !hasIssues; // Só pode fechar se não houver pendências
   const managers = getActiveManagers();
+  
+  console.log('Managers disponíveis para fechamento:', managers);
 
   return (
     <div className="min-h-screen bg-background">
@@ -340,7 +328,7 @@ export default function Closing() {
           <Card className="p-6 bg-gradient-card shadow-card">
             <h3 className="font-semibold mb-4">Relatório será enviado para:</h3>
             <div className="space-y-2">
-              {emailConfig.emailsDestino.map((email) => (
+              {(config.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"]).map((email) => (
                 <div key={email} className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-primary rounded-full"></div>
                   <span className="text-sm">{email}</span>
