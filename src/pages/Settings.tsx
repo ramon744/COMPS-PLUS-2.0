@@ -470,7 +470,7 @@ export default function Settings() {
                     <div className="space-y-3">
                       <h4 className="font-medium">Teste de Dados do Funcionário</h4>
                       <p className="text-sm text-muted-foreground">
-                        Testa o envio dos dados individuais de um funcionário (nome, valores por tipo, justificativas)
+                        Testa o envio dos dados individuais de um funcionário
                       </p>
                       <Button
                         variant="outline"
@@ -478,7 +478,7 @@ export default function Settings() {
                         className="w-full"
                         disabled={!config.webhookAtivo || !config.webhookUrl}
                       >
-                        <Send className="w-4 h-4 mr-2" />
+                        <Users className="w-4 h-4 mr-2" />
                         Testar Dados do Funcionário
                       </Button>
                     </div>
@@ -486,11 +486,12 @@ export default function Settings() {
                     <div className="space-y-3">
                       <h4 className="font-medium">Teste Completo</h4>
                       <p className="text-sm text-muted-foreground">
-                        Simula um fechamento completo: dados do relatório + 2 funcionários (como na produção)
+                        Simula o fluxo completo: 2 funcionários + relatório final (como no fechamento real)
                       </p>
                       <Button
+                        variant="outline"
                         onClick={handleTestAllData}
-                        className="w-full bg-gradient-primary shadow-button"
+                        className="w-full"
                         disabled={!config.webhookAtivo || !config.webhookUrl}
                       >
                         <TestTube className="w-4 h-4 mr-2" />
@@ -498,14 +499,6 @@ export default function Settings() {
                       </Button>
                     </div>
                   </div>
-
-                  {(!config.webhookAtivo || !config.webhookUrl) && (
-                    <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                      <p className="text-sm text-destructive">
-                        Configure e ative o webhook na aba "Webhook" antes de executar os testes.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </Card>
             </TabsContent>
@@ -513,21 +506,24 @@ export default function Settings() {
             <TabsContent value="usuarios">
               <Card className="p-6 bg-gradient-card shadow-card">
                 <h3 className="text-lg font-semibold mb-4">Gerenciamento de Usuários</h3>
-                <p className="text-muted-foreground mb-4">
-                  Esta funcionalidade estará disponível em breve.
+                <p className="text-muted-foreground">
+                  Funcionalidade em desenvolvimento. Use a aba "Gestão" no menu para gerenciar waiters e gerentes.
                 </p>
-                <Button variant="outline" disabled>
-                  <Users className="w-4 h-4 mr-2" />
-                  Gerenciar Usuários
-                </Button>
               </Card>
             </TabsContent>
           </Tabs>
 
-          <Button onClick={handleSave} className="w-full h-12 bg-gradient-primary shadow-button">
-            <Save className="w-5 h-5 mr-2" />
-            Salvar Configurações
-          </Button>
+          {/* Botão de Salvar Flutuante */}
+          <div className="fixed bottom-6 right-6">
+            <Button 
+              onClick={handleSave}
+              className="h-14 px-6 bg-gradient-primary shadow-float hover:shadow-button transition-all duration-200"
+              size="lg"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              Salvar Configurações
+            </Button>
+          </div>
         </div>
       </Layout>
     </div>
