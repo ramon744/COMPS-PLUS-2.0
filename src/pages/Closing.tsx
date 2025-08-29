@@ -162,7 +162,7 @@ export default function Closing() {
       // 2. DEPOIS: Envio dos dados gerais do relatório (que dispara o email)
       // Preparar campos de email (máximo 5)
       const emailFields: { [key: string]: string } = {};
-      const emailsDestino = config.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"];
+      const emailsDestino = config?.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"];
       for (let i = 1; i <= 5; i++) {
         emailFields[`email_destino${i}`] = emailsDestino[i - 1] || "";
       }
@@ -175,7 +175,7 @@ export default function Closing() {
         Gerente_noturno: nightManager,
         ...compTypePercentages,
         ...emailFields,
-        Texto_padrao_email: config.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional."
+        Texto_padrao_email: config?.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional."
       };
 
       await sendWebhook(generalData);
@@ -328,7 +328,7 @@ export default function Closing() {
           <Card className="p-6 bg-gradient-card shadow-card">
             <h3 className="font-semibold mb-4">Relatório será enviado para:</h3>
             <div className="space-y-2">
-              {(config.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"]).map((email) => (
+              {(config?.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"]).map((email) => (
                 <div key={email} className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-primary rounded-full"></div>
                   <span className="text-sm">{email}</span>
