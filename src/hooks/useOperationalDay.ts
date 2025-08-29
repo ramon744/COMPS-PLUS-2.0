@@ -32,6 +32,8 @@ export function useOperationalDay() {
   const formatOperationalDayDisplay = (date: string) => {
     const [year, month, day] = date.split('-');
     const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    // Operational day runs from 05:00 of startDate to 04:59:59 of the next day
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 1);
     
