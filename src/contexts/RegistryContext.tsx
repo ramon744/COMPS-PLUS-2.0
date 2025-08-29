@@ -251,8 +251,6 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         criadoEm: item.created_at
       })));
 
-      console.log('Managers carregados do banco:', managersData);
-
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Erro ao carregar dados do servidor');

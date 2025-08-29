@@ -204,8 +204,6 @@ export default function Closing() {
 
   const canClose = !hasIssues; // Só pode fechar se não houver pendências
   const managers = getActiveManagers();
-  
-  console.log('Managers disponíveis para fechamento:', managers);
 
   return (
     <div className="min-h-screen bg-background">
