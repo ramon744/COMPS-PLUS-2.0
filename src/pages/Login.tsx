@@ -100,53 +100,6 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-6 pt-4 border-t border-border">
-              <Button
-                variant="outline"
-                className="w-full mb-2"
-                onClick={() => setShowDemoInfo(!showDemoInfo)}
-                type="button"
-              >
-                Ver credenciais de demonstração
-              </Button>
-
-              {showDemoInfo && (
-                <Alert className="mt-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="space-y-2">
-                    <p className="font-medium">Credenciais de demonstração:</p>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => fillDemoCredentials('alice')}
-                          type="button"
-                        >
-                          Alice
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          alice / 123456
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => fillDemoCredentials('roberto')}
-                          type="button"
-                        >
-                          Roberto
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          roberto / 123456
-                        </span>
-                      </div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">

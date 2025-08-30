@@ -546,6 +546,31 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
 
   const deleteManager = async (id: string) => {
     try {
+      // Buscar dados do gerente para desativar sua conta no Supabase Auth
+      const manager = managers.find(m => m.id === id);
+      
+      if (manager?.usuario) {
+        // Buscar o usuário pelo email no auth.users
+        const { data: authUsers, error: searchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', manager.usuario)
+          .single();
+
+        if (!searchError && authUsers) {
+          // Desativar o perfil do usuário
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ ativo: false })
+            .eq('id', authUsers.id);
+
+          if (updateError) {
+            console.error('Error deactivating user profile:', updateError);
+          }
+        }
+      }
+
+      // Remover o gerente da tabela managers
       const { error } = await supabase
         .from('managers')
         .delete()
@@ -554,7 +579,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       setManagers(prev => prev.filter(manager => manager.id !== id));
-      toast.success('Gerente removido com sucesso!');
+      toast.success('Gerente removido e acesso bloqueado com sucesso!');
     } catch (error) {
       console.error('Error deleting manager:', error);
       toast.error('Erro ao remover gerente');
