@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/hooks/useSettings";
+import { cn } from "@/lib/utils";
 
 interface MoneyInputProps {
   value?: number; // Value in cents
@@ -66,13 +67,13 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <Label className="text-sm font-medium">
+          <Label className="text-sm sm:text-base font-medium">
             {label}
             {required && <span className="text-destructive ml-1">*</span>}
           </Label>
         )}
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm sm:text-base">
             R$
           </span>
           <Input
@@ -82,12 +83,15 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className={`pl-10 text-lg font-mono ${error ? "border-destructive" : ""}`}
+            className={cn(
+              "pl-10 h-10 sm:h-11 text-base sm:text-lg font-mono",
+              error ? "border-destructive" : ""
+            )}
             inputMode="numeric"
           />
         </div>
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-xs sm:text-sm text-destructive">{error}</p>
         )}
       </div>
     );

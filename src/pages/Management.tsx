@@ -111,57 +111,77 @@ export default function Management() {
     setIsDialogOpen(false);
   };
 
-  const handleSaveManager = async (manager: Partial<Manager>) => {
-    if (editingManager?.id) {
-      updateManager(editingManager.id, manager);
-      toast({
-        title: "Gerente atualizado",
-        description: "As informações foram salvas com sucesso.",
-      });
-    } else {
-      try {
-        // Primeiro adiciona o gerente na base
-        await addManager({
-          nome: manager.nome || "",
-          usuario: manager.usuario || "",
-          senha: manager.senha || "",
-          tipoAcesso: manager.tipoAcesso || "qualquer_ip",
-          ipPermitido: manager.ipPermitido,
-          ativo: true,
-        });
-
-        // Depois tenta criar a conta de usuário
-        if (manager.usuario && manager.senha && manager.nome) {
-          const { error } = await signUp(manager.usuario, manager.senha, manager.nome);
-          
-          if (error) {
-            toast({
-              title: "Gerente criado, mas erro na conta",
-              description: `Gerente adicionado ao sistema, mas houve erro na criação da conta: ${error}`,
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Gerente criado com sucesso",
-              description: "Gerente adicionado e conta criada no sistema de autenticação.",
-            });
-          }
-        } else {
-          toast({
-            title: "Gerente criado",
-            description: "Gerente adicionado ao sistema.",
-          });
+  const handleSaveManager = async (managerData: ManagerFormData) => {
+    try {
+      if (editingManager?.id) {
+        // Atualizando gerente existente
+        const updateData: Partial<Manager> = {
+          nome: managerData.nome,
+          usuario: managerData.email, // Mudança: email -> usuario
+          tipoAcesso: managerData.tipoAcesso,
+          ipPermitido: managerData.ipPermitido,
+        };
+        
+        // Só atualiza senha se foi fornecida
+        if (managerData.senha?.trim()) {
+          updateData.senha = managerData.senha;
         }
-      } catch (error) {
+        
+        updateManager(editingManager.id, updateData);
         toast({
-          title: "Erro ao criar gerente",
-          description: "Houve um erro ao adicionar o gerente.",
-          variant: "destructive",
+          title: "Gerente atualizado",
+          description: "As informações foram salvas com sucesso.",
+        });
+      } else {
+        // Criando novo gerente
+        if (!managerData.senha?.trim()) {
+          toast({
+            title: "Erro de validação",
+            description: "Senha é obrigatória para novos gerentes.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const newManager: Omit<Manager, 'id' | 'criadoEm'> = {
+          nome: managerData.nome || "",
+          usuario: managerData.email || "", // Mudança: email -> usuario
+          senha: managerData.senha || "",
+          tipoAcesso: managerData.tipoAcesso || "qualquer_ip",
+          ipPermitido: managerData.ipPermitido || "",
+          ativo: true,
+        };
+        
+        // Criar conta no Supabase Auth
+        const authResult = await signUp(managerData.email || "", managerData.senha || "", managerData.nome || "");
+        
+        if (authResult.error) {
+          toast({
+            title: "Erro ao criar conta",
+            description: authResult.error,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Adicionar gerente no banco
+        addManager(newManager);
+        toast({
+          title: "Gerente criado",
+          description: "Novo gerente adicionado com sucesso.",
         });
       }
+      
+      setEditingManager(null);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao salvar gerente:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar o gerente.",
+        variant: "destructive",
+      });
     }
-    setEditingManager(null);
-    setIsDialogOpen(false);
   };
 
   const handleToggleCompTypeStatus = (id: string) => {
@@ -280,7 +300,9 @@ export default function Management() {
                 </div>
 
                 <div className="space-y-3">
-                  {compTypes.map((compType) => (
+                  {compTypes
+                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                    .map((compType) => (
                     <Card key={compType.id} className="p-4 bg-gradient-card shadow-card">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -367,7 +389,9 @@ export default function Management() {
                 </div>
 
                 <div className="space-y-3">
-                  {waiters.map((waiter) => (
+                  {waiters
+                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                    .map((waiter) => (
                     <Card key={waiter.id} className="p-4 bg-gradient-card shadow-card">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -460,7 +484,9 @@ export default function Management() {
                 </div>
 
                 <div className="space-y-3">
-                  {managers.map((manager) => (
+                  {managers
+                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                    .map((manager) => (
                     <Card key={manager.id} className="p-4 bg-gradient-card shadow-card">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -663,6 +689,14 @@ function WaiterForm({
   );
 }
 
+interface ManagerFormData {
+  nome: string;
+  email: string;
+  senha: string;
+  tipoAcesso: "qualquer_ip" | "ip_especifico";
+  ipPermitido?: string;
+}
+
 function ManagerForm({ 
   manager, 
   onSave, 
@@ -672,17 +706,46 @@ function ManagerForm({
   onSave: (data: Partial<Manager>) => void;
   onCancel: () => void;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ManagerFormData>({
     nome: manager?.nome || "",
-    usuario: manager?.usuario || "",
+    email: manager?.usuario || "", // Mudança: usuario -> email
     senha: manager?.senha || "",
     tipoAcesso: manager?.tipoAcesso || "qualquer_ip",
     ipPermitido: manager?.ipPermitido || "",
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.nome.trim()) {
+      newErrors.nome = "Nome é obrigatório";
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = "Email é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email inválido";
+    }
+    
+    if (!manager?.id && !formData.senha.trim()) {
+      newErrors.senha = "Senha é obrigatória para novos gerentes";
+    }
+    
+    if (formData.tipoAcesso === "ip_especifico" && !formData.ipPermitido.trim()) {
+      newErrors.ipPermitido = "IP é obrigatório para acesso restrito";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    if (validateForm()) {
+      onSave(formData);
+    }
   };
 
   return (
@@ -693,27 +756,50 @@ function ManagerForm({
           value={formData.nome}
           onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
           placeholder="Ex: Alice Silva"
+          className={errors.nome ? "border-destructive" : ""}
           required
         />
+        {errors.nome && (
+          <p className="text-xs text-destructive">{errors.nome}</p>
+        )}
       </div>
+      
       <div className="space-y-2">
-        <Label>Usuário *</Label>
+        <Label>Email *</Label>
         <Input
-          value={formData.usuario}
-          onChange={(e) => setFormData(prev => ({ ...prev, usuario: e.target.value }))}
-          placeholder="Ex: alice.silva"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          placeholder="Ex: alice.silva@restaurante.com"
+          className={errors.email ? "border-destructive" : ""}
           required
         />
+        {errors.email && (
+          <p className="text-xs text-destructive">{errors.email}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Este email será usado para fazer login no sistema
+        </p>
       </div>
+      
       <div className="space-y-2">
-        <Label>Senha *</Label>
+        <Label>Senha {!manager?.id && "*"}</Label>
         <Input
           type="password"
           value={formData.senha}
           onChange={(e) => setFormData(prev => ({ ...prev, senha: e.target.value }))}
-          placeholder="Digite a senha"
-          required
+          placeholder={manager?.id ? "Deixe em branco para manter a atual" : "Digite a senha"}
+          className={errors.senha ? "border-destructive" : ""}
+          required={!manager?.id}
         />
+        {errors.senha && (
+          <p className="text-xs text-destructive">{errors.senha}</p>
+        )}
+        {manager?.id && (
+          <p className="text-xs text-muted-foreground">
+            Deixe em branco para manter a senha atual
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <Label>Tipo de Acesso *</Label>
@@ -742,11 +828,15 @@ function ManagerForm({
           <Input
             value={formData.ipPermitido}
             onChange={(e) => setFormData(prev => ({ ...prev, ipPermitido: e.target.value }))}
-            placeholder="Ex: 192.168.1.100"
+            placeholder="Ex: 192.168.1.100 ou 192.168.1.0/24"
+            className={errors.ipPermitido ? "border-destructive" : ""}
             required={formData.tipoAcesso === "ip_especifico"}
           />
+          {errors.ipPermitido && (
+            <p className="text-xs text-destructive">{errors.ipPermitido}</p>
+          )}
           <p className="text-xs text-muted-foreground">
-            Digite o endereço IP da rede WiFi onde o gerente poderá fazer login
+            Digite o endereço IP ou range da rede WiFi onde o gerente poderá fazer login
           </p>
         </div>
       )}

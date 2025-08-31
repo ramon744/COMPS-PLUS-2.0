@@ -26,42 +26,48 @@ export function useOperationalDay() {
     const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
     const day = String(brazilTime.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }, []); // Empty dependency array - only calculate once per component mount
+
+  const formatOperationalDayDisplay = useMemo(() => {
+    return (date: string) => {
+      const [year, month, day] = date.split('-');
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      
+      // Operational day runs from 05:00 of startDate to 04:59:59 of the next day
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1);
+      
+      const formatDate = (date: Date) => {
+        return date.toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      };
+      
+      return `${formatDate(startDate)} às ${formatDate(endDate)}`;
+    };
   }, []);
 
-  const formatOperationalDayDisplay = (date: string) => {
-    const [year, month, day] = date.split('-');
-    const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    
-    // Operational day runs from 05:00 of startDate to 04:59:59 of the next day
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-    
-    const formatDate = (date: Date) => {
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+  const getCurrentTurn = useMemo(() => {
+    return () => {
+      const brazilTime = getBrazilTime();
+      const hour = brazilTime.getHours();
+      
+      return (hour >= 5 && hour < 17) ? "manha" : "noite";
     };
-    
-    return `${formatDate(startDate)} às ${formatDate(endDate)}`;
-  };
+  }, []);
 
-  const getCurrentTurn = () => {
-    const brazilTime = getBrazilTime();
-    const hour = brazilTime.getHours();
-    
-    return (hour >= 5 && hour < 17) ? "manha" : "noite";
-  };
-
-  const getBrazilTimeString = () => {
-    return getBrazilTime().toISOString();
-  };
+  const getBrazilTimeString = useMemo(() => {
+    return () => {
+      return getBrazilTime().toISOString();
+    };
+  }, []);
 
   return {
     currentOperationalDay,
-    formatOperationalDayDisplay,
-    getCurrentTurn,
-    getBrazilTimeString,
+    formatOperationalDayDisplay: formatOperationalDayDisplay,
+    getCurrentTurn: getCurrentTurn,
+    getBrazilTimeString: getBrazilTimeString,
   };
 }

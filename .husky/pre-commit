@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Executar verificações antes do commit
+echo "🔍 Executando verificações pré-commit..."
+
+# Verificar TypeScript
+echo "📝 Verificando tipos TypeScript..."
+npm run type-check
+
+# Executar lint
+echo "🧹 Executando lint..."
+npm run lint
+
+# Verificar se o build funciona
+echo "🏗️ Testando build..."
+npm run build
+
+echo "✅ Todas as verificações passaram! Commit permitido."

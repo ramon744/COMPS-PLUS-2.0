@@ -126,6 +126,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
             };
             setWaiters(prev => [newWaiter, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
+            console.log('🔄 Atualizando waiter via real-time:', payload.new.id, 'ativo:', payload.new.ativo);
             setWaiters(prev => prev.map(waiter => 
               waiter.id === payload.new.id 
                 ? {
@@ -232,13 +233,19 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         criadoEm: item.created_at
       })));
 
-      setWaiters(waitersData.map(item => ({
+      const transformedWaiters = waitersData.map(item => ({
         id: item.id,
         nome: item.nome,
         matricula: item.matricula,
         ativo: item.ativo,
         criadoEm: item.created_at
-      })));
+      }));
+      
+      console.log('📊 Waiters carregados do servidor:', transformedWaiters.length);
+      console.log('📋 Waiters ativos:', transformedWaiters.filter(w => w.ativo).length);
+      console.log('📋 Waiters inativos:', transformedWaiters.filter(w => !w.ativo).length);
+      
+      setWaiters(transformedWaiters);
 
       setManagers(managersData.map(item => ({
         id: item.id,
@@ -455,7 +462,9 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
   };
 
   const getActiveCompTypes = () => {
-    return compTypes.filter(compType => compType.ativo);
+    return compTypes
+      .filter(compType => compType.ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   };
 
   const addManager = async (managerData: Omit<Manager, 'id' | 'criadoEm'>) => {
@@ -523,21 +532,42 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleManagerStatus = async (id: string) => {
-    const manager = managers.find(m => m.id === id);
-    if (!manager) return;
-
     try {
+      const manager = managers.find(m => m.id === id);
+      if (!manager) return;
+
+      const newStatus = !manager.ativo;
+      console.log('Alterando status do gerente:', { id, nome: manager.nome, ativoAtual: manager.ativo, novoStatus: newStatus });
+      
       const { error } = await supabase
         .from('managers')
-        .update({ ativo: !manager.ativo })
+        .update({ ativo: newStatus })
         .eq('id', id);
 
       if (error) throw error;
 
+      console.log('Status atualizado no banco com sucesso');
+
+      // Atualizar estado local
       setManagers(prev => prev.map(manager => 
-        manager.id === id ? { ...manager, ativo: !manager.ativo } : manager
+        manager.id === id 
+          ? { ...manager, ativo: newStatus }
+          : manager
       ));
-      toast.success(`Gerente ${!manager.ativo ? 'ativado' : 'desativado'} com sucesso!`);
+
+      // Se desativou, fazer logout do usuário se estiver logado
+      if (!newStatus) {
+        console.log('Gerente desativado, verificando se está logado...');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email === manager.usuario) {
+          console.log('Usuário logado encontrado, fazendo logout...');
+          await supabase.auth.signOut();
+        } else {
+          console.log('Usuário não está logado ou email não confere');
+        }
+      }
+
+      toast.success(`Gerente ${newStatus ? 'ativado' : 'desativado'} com sucesso!`);
     } catch (error) {
       console.error('Error toggling manager status:', error);
       toast.error('Erro ao alterar status do gerente');
@@ -546,31 +576,24 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
 
   const deleteManager = async (id: string) => {
     try {
-      // Buscar dados do gerente para desativar sua conta no Supabase Auth
       const manager = managers.find(m => m.id === id);
-      
-      if (manager?.usuario) {
-        // Buscar o usuário pelo email no auth.users
-        const { data: authUsers, error: searchError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', manager.usuario)
-          .single();
+      if (!manager) return;
 
-        if (!searchError && authUsers) {
-          // Desativar o perfil do usuário
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ ativo: false })
-            .eq('id', authUsers.id);
+      // Primeiro, verificar se há COMPs associados
+      const { data: compsData, error: compsError } = await supabase
+        .from('comps')
+        .select('id')
+        .eq('gerente_id', id)
+        .limit(1);
 
-          if (updateError) {
-            console.error('Error deactivating user profile:', updateError);
-          }
-        }
+      if (compsError) throw compsError;
+
+      if (compsData && compsData.length > 0) {
+        toast.error('Não é possível excluir um gerente que possui COMPs registrados');
+        return;
       }
 
-      // Remover o gerente da tabela managers
+      // Deletar do banco
       const { error } = await supabase
         .from('managers')
         .delete()
@@ -578,21 +601,40 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
+      // Remover do estado local
       setManagers(prev => prev.filter(manager => manager.id !== id));
-      toast.success('Gerente removido e acesso bloqueado com sucesso!');
+
+      // Se o usuário estiver logado, fazer logout
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email === manager.usuario) {
+        await supabase.auth.signOut();
+      }
+
+      toast.success('Gerente excluído com sucesso!');
     } catch (error) {
       console.error('Error deleting manager:', error);
-      toast.error('Erro ao remover gerente');
+      toast.error('Erro ao excluir gerente');
     }
   };
 
 
   const getActiveWaiters = () => {
-    return waiters.filter(waiter => waiter.ativo);
+    return waiters
+      .filter(waiter => waiter.ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   };
 
   const getActiveManagers = () => {
-    return managers.filter(manager => manager.ativo);
+    return managers
+      .filter(manager => manager.ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  };
+
+  const refreshData = async () => {
+    if (!user) return;
+    
+    console.log('🔄 Forçando recarregamento dos dados...');
+    await loadData();
   };
 
   const clearAllData = async () => {
@@ -635,6 +677,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
     getActiveWaiters,
     getActiveManagers,
     clearAllData,
+    refreshData,
   };
 
   return (

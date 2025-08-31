@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -39,40 +39,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+
+
   const signUp = async (email: string, password: string, name: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          name: name
+    try {
+      console.log('Criando conta para:', email, name);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
         }
+      });
+
+      if (error) {
+        console.log('Erro ao criar conta:', error);
+        return { error: error.message };
       }
-    });
 
-    if (error) {
-      return { error: error.message };
+      console.log('Conta criada com sucesso:', data);
+      toast.success('Conta criada com sucesso!');
+      return { error: null };
+    } catch (error) {
+      console.error('Erro na criação da conta:', error);
+      return { error: "Erro interno na criação da conta" };
     }
-
-    toast.success('Conta criada com sucesso! Verifique seu email.');
-    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      console.log('Tentando login com email:', email);
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      return { error: error.message };
+      if (error) {
+        console.log('Erro no Supabase Auth:', error);
+        return { error: error.message };
+      }
+
+      console.log('Login realizado com sucesso no Supabase Auth');
+      toast.success('Login realizado com sucesso!');
+      return { error: null };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return { error: "Erro interno do sistema" };
     }
-
-    toast.success('Login realizado com sucesso!');
-    return { error: null };
   };
 
   const signOut = async () => {

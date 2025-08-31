@@ -1,73 +1,86 @@
-# Welcome to your Lovable project
+# Comps Plus 54 - Sistema de Gestão de COMPs
 
-## Project info
+Sistema completo para gestão de COMPs (Comprovantes de Pagamento) com autenticação, relatórios e monitoramento em tempo real.
 
-**URL**: https://lovable.dev/projects/8eccc01b-b66c-4fdb-8cf3-14c9c158394f
+## 🚀 Deploy na Vercel
 
-## How can I edit this code?
+### Pré-requisitos
+- Conta na [Vercel](https://vercel.com)
+- Conta no [Supabase](https://supabase.com)
+- Node.js 18+ instalado
 
-There are several ways of editing your application.
+### Passos para Deploy
 
-**Use Lovable**
+1. **Clone o repositório**
+   ```bash
+   git clone <seu-repositorio>
+   cd comps-plus-54
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8eccc01b-b66c-4fdb-8cf3-14c9c158394f) and start prompting.
+2. **Instale as dependências**
+   ```bash
+   npm install
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+3. **Configure as variáveis de ambiente**
+   - Crie arquivo `.env.local` com suas credenciais do Supabase
+   - Ou configure diretamente na Vercel
 
-**Use your preferred IDE**
+4. **Deploy na Vercel**
+   ```bash
+   npm run build
+   npx vercel --prod
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+   Ou conecte seu repositório GitHub na Vercel para deploy automático.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Variáveis de Ambiente na Vercel
 
-Follow these steps:
+Configure estas variáveis no painel da Vercel:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- `VITE_SUPABASE_URL`: URL do seu projeto Supabase
+- `VITE_SUPABASE_ANON_KEY`: Chave anônima do Supabase
+- `VITE_APP_ENV`: production
+- `VITE_APP_VERSION`: 1.0.0
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Estrutura do Projeto
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+├── components/     # Componentes reutilizáveis
+├── contexts/      # Contextos React (Auth, Comps, Registry)
+├── hooks/         # Hooks personalizados
+├── integrations/  # Integrações externas (Supabase)
+├── pages/         # Páginas da aplicação
+├── types/         # Definições TypeScript
+└── utils/         # Utilitários
 ```
 
-**Edit a file directly in GitHub**
+### Scripts Disponíveis
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- `npm run dev`: Desenvolvimento local
+- `npm run build`: Build de produção
+- `npm run preview`: Preview do build
+- `npm run lint`: Verificação de código
+- `npm run type-check`: Verificação de tipos TypeScript
 
-**Use GitHub Codespaces**
+### Tecnologias
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn/ui
+- **Backend**: Supabase (PostgreSQL + Auth + Realtime)
+- **Deploy**: Vercel
 
-## What technologies are used for this project?
+### Funcionalidades
 
-This project is built with:
+- ✅ Autenticação de gerentes
+- ✅ Gestão de COMPs em tempo real
+- ✅ Relatórios e dashboards
+- ✅ Gestão de waiters e tipos de COMP
+- ✅ Fechamento operacional
+- ✅ Sistema de notificações
+- ✅ Monitoramento de espaço no banco
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Suporte
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8eccc01b-b66c-4fdb-8cf3-14c9c158394f) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Para suporte técnico, entre em contato com a equipe de desenvolvimento.

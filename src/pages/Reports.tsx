@@ -188,11 +188,13 @@ export default function Reports() {
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border">
                     <SelectItem value="all">Todos</SelectItem>
-                    {compTypes.map((compType) => (
-                      <SelectItem key={compType.id} value={compType.id}>
-                        {compType.codigo}
-                      </SelectItem>
-                    ))}
+                    {compTypes
+                      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                      .map((compType) => (
+                        <SelectItem key={compType.id} value={compType.id}>
+                          {compType.codigo}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

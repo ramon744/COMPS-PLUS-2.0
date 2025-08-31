@@ -410,11 +410,13 @@ export default function Closing() {
                       <SelectValue placeholder="Selecione o gerente diurno" />
                     </SelectTrigger>
                     <SelectContent>
-                      {managers.map((manager) => (
-                        <SelectItem key={manager.id} value={manager.nome}>
-                          {manager.nome}
-                        </SelectItem>
-                      ))}
+                      {managers
+                        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                        .map((manager) => (
+                          <SelectItem key={manager.id} value={manager.nome}>
+                            {manager.nome}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -430,11 +432,13 @@ export default function Closing() {
                       <SelectValue placeholder="Selecione o gerente noturno" />
                     </SelectTrigger>
                     <SelectContent>
-                      {managers.map((manager) => (
-                        <SelectItem key={manager.id} value={manager.nome}>
-                          {manager.nome}
-                        </SelectItem>
-                      ))}
+                      {managers
+                        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                        .map((manager) => (
+                          <SelectItem key={manager.id} value={manager.nome}>
+                            {manager.nome}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

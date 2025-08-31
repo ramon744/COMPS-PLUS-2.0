@@ -35,6 +35,9 @@ export function CompProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
+    // Prevent multiple subscriptions
+    let isSubscribed = true;
+
     const channel = supabase
       .channel('comps-changes')
       .on(
@@ -45,9 +48,18 @@ export function CompProvider({ children }: { children: ReactNode }) {
           table: 'comps'
         },
         (payload) => {
+          if (!isSubscribed) return;
+          
           console.log('Real-time change received:', payload);
           
           if (payload.eventType === 'INSERT') {
+            // Verificar se o COMP já existe para evitar duplicação
+            const existingComp = comps.find(comp => comp.id === payload.new.id);
+            if (existingComp) {
+              console.log('COMP já existe, ignorando INSERT:', payload.new.id);
+              return;
+            }
+
             // Transform the new comp data
             const newComp: Comp = {
               id: payload.new.id,
@@ -67,8 +79,10 @@ export function CompProvider({ children }: { children: ReactNode }) {
               atualizadoEm: payload.new.updated_at
             };
             
+            console.log('Adicionando novo COMP via real-time:', newComp.id);
             setComps(prev => [newComp, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
+            console.log('Atualizando COMP via real-time:', payload.new.id);
             setComps(prev => prev.map(comp => 
               comp.id === payload.new.id 
                 ? {
@@ -85,6 +99,7 @@ export function CompProvider({ children }: { children: ReactNode }) {
                 : comp
             ));
           } else if (payload.eventType === 'DELETE') {
+            console.log('Removendo COMP via real-time:', payload.old.id);
             setComps(prev => prev.filter(comp => comp.id !== payload.old.id));
           }
         }
@@ -92,6 +107,7 @@ export function CompProvider({ children }: { children: ReactNode }) {
       .subscribe();
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -131,6 +147,7 @@ export function CompProvider({ children }: { children: ReactNode }) {
         atualizadoEm: item.updated_at
       }));
 
+      console.log('Carregando COMPs do servidor:', transformedComps.length);
       setComps(transformedComps);
     } catch (error) {
       console.error('Error loading comps:', error);
@@ -167,25 +184,8 @@ export function CompProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      const newComp: Comp = {
-        id: data.id,
-        compTypeId: data.comp_type_id,
-        waiterId: data.waiter_id,
-        valorCentavos: data.valor_centavos,
-        motivo: data.motivo,
-        fotoUrl: data.foto_url,
-        dataHoraLocal: data.data_hora_local,
-        dataHoraUtc: data.data_hora_utc,
-        diaOperacional: data.dia_operacional,
-        turno: data.turno as "manha" | "noite",
-        gerenteId: data.gerente_id,
-        status: data.status as "ativo" | "cancelado",
-        canceladoMotivo: data.cancelado_motivo,
-        criadoEm: data.created_at,
-        atualizadoEm: data.updated_at
-      };
-
-      setComps(prev => [newComp, ...prev]);
+      // Não atualizar o estado local aqui - deixar o real-time fazer isso
+      // Isso evita duplicação
       toast.success('COMP adicionado com sucesso!');
     } catch (error) {
       console.error('Error adding comp:', error);

@@ -34,64 +34,64 @@ export function Dashboard({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       {/* Operational Day Header */}
-      <Card className="bg-gradient-card shadow-card p-6">
+      <Card className="bg-gradient-card shadow-card p-4 sm:p-6">
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-muted-foreground">Dia Operacional</h2>
-          <p className="text-2xl font-bold text-primary mt-1">{operationalDay}</p>
-          <p className="text-sm text-muted-foreground mt-2">05:00 às 04:59:59 (próximo dia)</p>
+          <h2 className="text-base sm:text-lg font-semibold text-muted-foreground">Dia Operacional</h2>
+          <p className="text-xl sm:text-2xl font-bold text-primary mt-1">{operationalDay}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">05:00 às 04:59:59 (próximo dia)</p>
         </div>
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Button 
           onClick={onNewComp}
-          className="h-20 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200"
+          className="h-16 sm:h-20 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200"
           size="lg"
         >
-          <div className="flex flex-col items-center gap-2">
-            <Plus className="h-6 w-6" />
-            <span className="text-sm font-medium">Novo COMP</span>
+          <div className="flex flex-col items-center gap-1 sm:gap-2">
+            <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-xs sm:text-sm font-medium">Novo COMP</span>
           </div>
         </Button>
         
         <Button 
           onClick={onViewComps}
           variant="secondary"
-          className="h-20 shadow-card hover:shadow-button transition-all duration-200"
+          className="h-16 sm:h-20 shadow-card hover:shadow-button transition-all duration-200"
           size="lg"
         >
-          <div className="flex flex-col items-center gap-2">
-            <Receipt className="h-6 w-6" />
-            <span className="text-sm font-medium">Ver COMPs</span>
+          <div className="flex flex-col items-center gap-1 sm:gap-2">
+            <Receipt className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-xs sm:text-sm font-medium">Ver COMPs</span>
           </div>
         </Button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 bg-gradient-card shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <DollarSign className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4 bg-gradient-card shadow-card">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="text-xl font-bold text-primary">{formatCurrency(stats.totalValue)}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
+              <p className="text-lg sm:text-xl font-bold text-primary">{formatCurrency(stats.totalValue)}</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-gradient-card shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-success" />
+        <Card className="p-3 sm:p-4 bg-gradient-card shadow-card">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-success/10 rounded-lg">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Quantidade</p>
-              <p className="text-xl font-bold text-success">{stats.totalCount}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Quantidade</p>
+              <p className="text-lg sm:text-xl font-bold text-success">{stats.totalCount}</p>
             </div>
           </div>
         </Card>
