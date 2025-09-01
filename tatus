@@ -1,0 +1,3 @@
+[33m1ff2699[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: adicionar função formatCurrency ao utils.ts
+[33mf2bd7f9[m feat: remover abas desnecessárias e adicionar histórico de relatórios enviados
+[33m16d7d66[m debug: adicionar logs detalhados para salvamento e carregamento de configurações
