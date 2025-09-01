@@ -88,8 +88,17 @@ export default function Closing() {
       return;
     }
 
+    // DEBUG: Verificar configurações de webhook
+    console.log('🔍 DEBUG - Configurações de webhook:', {
+      webhookAtivo: config.webhookAtivo,
+      webhookUrl: config.webhookUrl,
+      webhookUrlTrimmed: config.webhookUrl?.trim(),
+      configCompleto: config
+    });
+
     // Verificar se o webhook está configurado
     if (!config.webhookAtivo || !config.webhookUrl || config.webhookUrl.trim() === '') {
+      console.log('❌ WEBHOOK NÃO CONFIGURADO - Bloqueando fechamento');
       toast({
         title: "Webhook não configurado",
         description: "Configure um webhook nas configurações antes de fazer o fechamento.",
@@ -97,6 +106,8 @@ export default function Closing() {
       });
       return;
     }
+
+    console.log('✅ WEBHOOK CONFIGURADO - Prosseguindo com fechamento');
 
     setIsClosing(true);
     setProgress(0);
