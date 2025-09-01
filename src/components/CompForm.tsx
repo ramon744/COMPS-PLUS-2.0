@@ -176,14 +176,19 @@ export function CompForm({
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-[calc(100vw-2rem)] sm:w-[--radix-popover-trigger-width] p-0" 
+                className="w-[calc(100vw-2rem)] sm:w-[--radix-popover-trigger-width] p-0 z-50" 
                 align="start"
-                side="bottom"
+                side="top"
                 sideOffset={4}
+                avoidCollisions={false}
+                style={{
+                  maxHeight: '40vh',
+                  overflow: 'hidden'
+                }}
               >
                 <Command>
                   <CommandInput placeholder="Buscar atendente..." className="h-10 sm:h-11 text-sm sm:text-base" />
-                  <CommandList className="max-h-[200px] sm:max-h-[300px]">
+                  <CommandList className="max-h-[150px] sm:max-h-[300px]">
                     <CommandEmpty>Nenhum atendente encontrado.</CommandEmpty>
                     <CommandGroup>
                       {(() => {
