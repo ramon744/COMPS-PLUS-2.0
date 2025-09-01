@@ -88,6 +88,16 @@ export default function Closing() {
       return;
     }
 
+    // Verificar se o webhook está configurado
+    if (!config.webhookAtivo || !config.webhookUrl || config.webhookUrl.trim() === '') {
+      toast({
+        title: "Webhook não configurado",
+        description: "Configure um webhook nas configurações antes de fazer o fechamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsClosing(true);
     setProgress(0);
     
@@ -211,7 +221,7 @@ export default function Closing() {
     }
   };
 
-  const canClose = !hasIssues; // Só pode fechar se não houver pendências
+  const canClose = !hasIssues && config.webhookAtivo && config.webhookUrl && config.webhookUrl.trim() !== ''; // Só pode fechar se não houver pendências e webhook estiver configurado
   const managers = getActiveManagers();
 
   return (
@@ -330,6 +340,31 @@ export default function Closing() {
                 <CheckCircle className="h-5 w-5 text-success" />
                 <span className="text-sm">Todas as informações obrigatórias preenchidas</span>
               </div>
+            </div>
+          </Card>
+
+          {/* Status do Webhook */}
+          <Card className="p-6 bg-gradient-card shadow-card">
+            <h3 className="font-semibold mb-4">Status do Webhook</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                {config.webhookAtivo && config.webhookUrl && config.webhookUrl.trim() !== '' ? (
+                  <>
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <span className="text-sm text-success">Webhook configurado e ativo</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    <span className="text-sm text-destructive">Webhook não configurado</span>
+                  </>
+                )}
+              </div>
+              {config.webhookAtivo && config.webhookUrl && (
+                <div className="text-xs text-muted-foreground break-all">
+                  URL: {config.webhookUrl}
+                </div>
+              )}
             </div>
           </Card>
 
@@ -490,7 +525,10 @@ export default function Closing() {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
                 <span className="text-sm text-destructive">
-                  Existem pendências que impedem o fechamento. Revise os COMPs antes de continuar.
+                  {!config.webhookAtivo || !config.webhookUrl || config.webhookUrl.trim() === '' 
+                    ? "Webhook não configurado. Configure um webhook nas configurações antes de fazer o fechamento."
+                    : "Existem pendências que impedem o fechamento. Revise os COMPs antes de continuar."
+                  }
                 </span>
               </div>
             </Card>
