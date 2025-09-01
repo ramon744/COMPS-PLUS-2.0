@@ -35,3 +35,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     },
   },
 });
+
+// Teste direto de conexão
+console.log('🧪 TESTE - Testando conexão direta...');
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('❌ ERRO - Falha na conexão:', error);
+  } else {
+    console.log('✅ SUCESSO - Conexão estabelecida:', data.session ? 'Usuário logado' : 'Sem sessão');
+  }
+}).catch((error) => {
+  console.error('❌ ERRO - Exceção na conexão:', error);
+});
