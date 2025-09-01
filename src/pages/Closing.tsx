@@ -200,7 +200,49 @@ export default function Closing() {
 
       await sendWebhook(generalData);
       
-      console.log('✅ Webhook enviado com sucesso - Fechamento concluído sem registrar na tabela closings temporariamente');
+      // Registrar o fechamento na tabela closings com correção robusta
+      try {
+        const agora = new Date();
+        
+        // Criar data de início operacional de forma mais robusta
+        const [year, month, day] = operationalDay.split('-').map(Number);
+        const horaCorte = config?.horaCorte || '05:00';
+        const [hours, minutes] = horaCorte.split(':').map(Number);
+        
+        const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        
+        console.log('🔍 DEBUG - Registrando fechamento:', {
+          operationalDay,
+          agora: agora.toISOString(),
+          inicioOperacional: inicioOperacional.toISOString(),
+          totalValue: closingSummary.totalValue,
+          totalQuantity: closingSummary.totalQuantity
+        });
+
+        const { error: closingError } = await supabase
+          .from('closings')
+          .insert({
+            dia_operacional: operationalDay,
+            periodo_inicio_local: inicioOperacional.toISOString(),
+            periodo_fim_local: agora.toISOString(),
+            total_valor_centavos: Math.round(closingSummary.totalValue * 100),
+            total_qtd: closingSummary.totalQuantity,
+            fechado_por: user?.id,
+            fechado_em_local: agora.toISOString(),
+            enviado_para: config?.emailsDestino || [],
+            observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}`,
+          });
+
+        if (closingError) {
+          console.error('❌ Erro ao registrar fechamento:', closingError);
+          // Não falhar o fechamento por causa disso, apenas logar
+        } else {
+          console.log('✅ Fechamento registrado com sucesso na tabela closings');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao processar registro do fechamento:', error);
+        // Não falhar o fechamento por causa disso, apenas logar
+      }
       
       currentStep++;
       setProgress(100);
