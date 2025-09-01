@@ -237,7 +237,7 @@ export default function Closing() {
           console.error('❌ Erro ao registrar fechamento:', closingError);
           // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log('✅ Fechamento registrado com sucesso na tabela closings');
+          console.log('✅ Fechamento registrado com sucesso na tabela closings - v1.0.3');
         }
       } catch (error) {
         console.error('❌ Erro ao processar registro do fechamento:', error);
