@@ -200,40 +200,27 @@ export default function Closing() {
 
       await sendWebhook(generalData);
       
-      // 🚀 SOLUÇÃO DEFINITIVA: Registrar fechamento via webhook adicional
-      // Isso garante que o histórico seja registrado independente do cache do Vercel
+      // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK
       try {
-        const closingData = {
-          acao: "registro_fechamento",
-          dia_operacional: operationalDay,
-          total_valor_centavos: Math.round(closingSummary.totalValue * 100),
-          total_qtd: closingSummary.totalQuantity,
-          fechado_por: user?.id,
-          gerente_manha: morningManager,
-          gerente_noite: nightManager,
-          webhook_url: config?.webhookUrl,
-          timestamp: new Date().toISOString()
-        };
-        
-        console.log('🚀 REGISTRANDO FECHAMENTO VIA WEBHOOK ADICIONAL:', closingData);
-        
-        // Enviar dados de fechamento para um webhook específico de registro
-        await sendWebhook(closingData);
-        
-        console.log('✅ FECHAMENTO REGISTRADO VIA WEBHOOK - v1.0.3');
-        
-      } catch (error) {
-        console.error('❌ Erro ao registrar fechamento via webhook:', error);
-      }
-      
-      // 📝 TENTATIVA ADICIONAL: Registro direto no banco (pode falhar devido ao cache)
-      try {
+        const TIMESTAMP_CACHE_BREAK = Date.now(); // Força novo bundle
         const agora = new Date();
+        
+        // Criar data de início operacional de forma mais robusta
         const [year, month, day] = operationalDay.split('-').map(Number);
         const horaCorte = config?.horaCorte || '05:00';
         const [hours, minutes] = horaCorte.split(':').map(Number);
+        
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
+        console.log(`🔥 DEBUG v1.0.4 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
+          operationalDay,
+          agora: agora.toISOString(),
+          inicioOperacional: inicioOperacional.toISOString(),
+          totalValue: closingSummary.totalValue,
+          totalQuantity: closingSummary.totalQuantity,
+          cacheBreaker: TIMESTAMP_CACHE_BREAK
+        });
+
         const { error: closingError } = await supabase
           .from('closings')
           .insert({
@@ -245,16 +232,18 @@ export default function Closing() {
             fechado_por: user?.id,
             fechado_em_local: agora.toISOString(),
             enviado_para: config?.emailsDestino || [],
-            observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}`,
+            observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}. Cache: ${TIMESTAMP_CACHE_BREAK}`,
           });
 
         if (closingError) {
-          console.error('❌ Erro ao registrar fechamento no banco:', closingError);
+          console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
+          // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log('✅ Fechamento registrado no banco também - v1.0.3');
+          console.log(`✅ FECHAMENTO REGISTRADO COM SUCESSO v1.0.4 [${TIMESTAMP_CACHE_BREAK}]`);
         }
       } catch (error) {
-        console.error('❌ Erro ao processar registro no banco:', error);
+        console.error('❌ Erro ao processar registro do fechamento:', error);
+        // Não falhar o fechamento por causa disso, apenas logar
       }
       
       currentStep++;
