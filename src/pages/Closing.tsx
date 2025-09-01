@@ -211,7 +211,7 @@ export default function Closing() {
         
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        console.log('🔍 DEBUG - Registrando fechamento:', {
+        console.log('🔍 DEBUG - Registrando fechamento na tabela closings:', {
           operationalDay,
           agora: agora.toISOString(),
           inicioOperacional: inicioOperacional.toISOString(),

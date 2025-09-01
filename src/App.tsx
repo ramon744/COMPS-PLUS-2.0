@@ -13,7 +13,6 @@ import Settings from "./pages/Settings";
 import Management from "./pages/Management"; 
 import Reports from "./pages/Reports";
 import Closing from "./pages/Closing";
-import TestClosing from "./pages/TestClosing";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -64,11 +63,6 @@ const App = () => (
                   <Route path="/closing" element={
                     <ProtectedRoute>
                       <Closing />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/test-closing" element={
-                    <ProtectedRoute>
-                      <TestClosing />
                     </ProtectedRoute>
                   } />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
