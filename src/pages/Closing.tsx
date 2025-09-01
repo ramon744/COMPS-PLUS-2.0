@@ -212,7 +212,7 @@ export default function Closing() {
         
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        console.log(`🔥 DEBUG v1.0.4 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
+        console.log(`🔥 CACHE BREAK v2.0.0 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
           operationalDay,
           agora: agora.toISOString(),
           inicioOperacional: inicioOperacional.toISOString(),
@@ -239,7 +239,7 @@ export default function Closing() {
           console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
           // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log(`✅ FECHAMENTO REGISTRADO COM SUCESSO v1.0.4 [${TIMESTAMP_CACHE_BREAK}]`);
+          console.log(`✅ FECHAMENTO REGISTRADO COM SUCESSO v2.0.0 [${TIMESTAMP_CACHE_BREAK}]`);
         }
       } catch (error) {
         console.error('❌ Erro ao processar registro do fechamento:', error);
