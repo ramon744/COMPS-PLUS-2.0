@@ -51,7 +51,7 @@ export function useReportHistory() {
           fechado_por
         `)
         .gte('dia_operacional', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('dia_operacional', { ascending: false });
+        .order('fechado_em_local', { ascending: false }); // Mais recente primeiro por horário exato
 
       console.log('🔍 DEBUG - Resultado da busca de histórico:', {
         closings,
