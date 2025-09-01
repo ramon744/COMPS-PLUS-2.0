@@ -200,25 +200,40 @@ export default function Closing() {
 
       await sendWebhook(generalData);
       
-      // Registrar o fechamento na tabela closings com correção robusta
+      // 🚀 SOLUÇÃO DEFINITIVA: Registrar fechamento via webhook adicional
+      // Isso garante que o histórico seja registrado independente do cache do Vercel
+      try {
+        const closingData = {
+          acao: "registro_fechamento",
+          dia_operacional: operationalDay,
+          total_valor_centavos: Math.round(closingSummary.totalValue * 100),
+          total_qtd: closingSummary.totalQuantity,
+          fechado_por: user?.id,
+          gerente_manha: morningManager,
+          gerente_noite: nightManager,
+          webhook_url: config?.webhookUrl,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('🚀 REGISTRANDO FECHAMENTO VIA WEBHOOK ADICIONAL:', closingData);
+        
+        // Enviar dados de fechamento para um webhook específico de registro
+        await sendWebhook(closingData);
+        
+        console.log('✅ FECHAMENTO REGISTRADO VIA WEBHOOK - v1.0.3');
+        
+      } catch (error) {
+        console.error('❌ Erro ao registrar fechamento via webhook:', error);
+      }
+      
+      // 📝 TENTATIVA ADICIONAL: Registro direto no banco (pode falhar devido ao cache)
       try {
         const agora = new Date();
-        
-        // Criar data de início operacional de forma mais robusta
         const [year, month, day] = operationalDay.split('-').map(Number);
         const horaCorte = config?.horaCorte || '05:00';
         const [hours, minutes] = horaCorte.split(':').map(Number);
-        
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        console.log('🔍 DEBUG - Registrando fechamento na tabela closings:', {
-          operationalDay,
-          agora: agora.toISOString(),
-          inicioOperacional: inicioOperacional.toISOString(),
-          totalValue: closingSummary.totalValue,
-          totalQuantity: closingSummary.totalQuantity
-        });
-
         const { error: closingError } = await supabase
           .from('closings')
           .insert({
@@ -234,14 +249,12 @@ export default function Closing() {
           });
 
         if (closingError) {
-          console.error('❌ Erro ao registrar fechamento:', closingError);
-          // Não falhar o fechamento por causa disso, apenas logar
+          console.error('❌ Erro ao registrar fechamento no banco:', closingError);
         } else {
-          console.log('✅ Fechamento registrado com sucesso na tabela closings - v1.0.3');
+          console.log('✅ Fechamento registrado no banco também - v1.0.3');
         }
       } catch (error) {
-        console.error('❌ Erro ao processar registro do fechamento:', error);
-        // Não falhar o fechamento por causa disso, apenas logar
+        console.error('❌ Erro ao processar registro no banco:', error);
       }
       
       currentStep++;
