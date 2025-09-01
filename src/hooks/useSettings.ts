@@ -59,8 +59,14 @@ export function useSettings() {
       }
 
       if (data) {
+        console.log('🔍 DEBUG - Configurações carregadas do banco:', {
+          configCarregado: data.config_value,
+          webhookAtivo: (data.config_value as any)?.webhookAtivo,
+          webhookUrl: (data.config_value as any)?.webhookUrl
+        });
         setConfig(data.config_value as any as ConfigData);
       } else {
+        console.log('🔍 DEBUG - Nenhuma configuração encontrada, usando padrão');
         // Se não existe configuração, usar padrão
         setConfig(defaultConfig);
       }
@@ -81,6 +87,14 @@ export function useSettings() {
   const saveSettingsInternal = useCallback(async (newConfig: ConfigData, showToast = true) => {
     if (!user) return;
 
+    console.log('🔍 DEBUG - Salvando configurações:', {
+      userId: user.id,
+      configKey: 'app_settings',
+      newConfig: newConfig,
+      webhookAtivo: newConfig.webhookAtivo,
+      webhookUrl: newConfig.webhookUrl
+    });
+
     try {
       // Primeiro tenta fazer update
       const { error: updateError } = await supabase
@@ -91,8 +105,11 @@ export function useSettings() {
         .eq('user_id', user.id)
         .eq('config_key', 'app_settings');
 
+      console.log('📝 DEBUG - Resultado do update:', { updateError });
+
       // Se não conseguiu fazer update (registro não existe), faz insert
       if (updateError?.code === 'PGRST116') {
+        console.log('📝 DEBUG - Registro não existe, fazendo insert...');
         const { error: insertError } = await supabase
           .from('settings')
           .insert({
@@ -101,6 +118,7 @@ export function useSettings() {
             config_value: newConfig as any,
           });
 
+        console.log('📝 DEBUG - Resultado do insert:', { insertError });
         if (insertError) {
           console.error('Erro ao inserir configurações:', insertError);
           throw insertError;
@@ -114,6 +132,12 @@ export function useSettings() {
 
       // Manter compatibilidade com localStorage para componentes que ainda usam
       localStorage.setItem('app-settings', JSON.stringify(newConfig));
+
+      console.log('✅ DEBUG - Configurações salvas com sucesso:', {
+        configSalvo: newConfig,
+        webhookAtivo: newConfig.webhookAtivo,
+        webhookUrl: newConfig.webhookUrl
+      });
 
       if (showToast) {
         toast({
