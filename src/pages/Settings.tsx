@@ -7,169 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Mail, Settings2, Users, FileText, Send, Globe, TestTube } from "lucide-react";
+import { Save, Mail, Settings2, FileText, Send, History } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
-import { useWebhook } from "@/hooks/useWebhook";
 import { useToast } from "@/hooks/use-toast";
+import { ReportHistory } from "@/components/ReportHistory";
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading } = useSettings();
-  const { sendWebhook } = useWebhook();
   const { toast } = useToast();
   
   const [emailInput, setEmailInput] = useState("");
 
   const handleSave = async () => {
     await saveSettings(config);
-  };
-
-  const handleTestWebhook = async () => {
-    if (!config.webhookAtivo || !config.webhookUrl) {
-      toast({
-        title: "Webhook não configurado",
-        description: "Configure e ative o webhook antes de testar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await sendWebhook({
-      test: true,
-      message: "Teste de webhook do sistema de COMPs",
-      timestamp: new Date().toISOString(),
-    });
-  };
-
-  const handleTestReportData = async () => {
-    if (!config.webhookAtivo || !config.webhookUrl) {
-      toast({
-        title: "Webhook não configurado",
-        description: "Configure e ative o webhook antes de testar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Preparar campos de email (máximo 5)
-    const emailFields: { [key: string]: string } = {};
-    for (let i = 1; i <= 5; i++) {
-      emailFields[`email_destino${i}`] = config.emailsDestino[i - 1] || "";
-    }
-
-    const testReportData = {
-      acao: "dados relatorio",
-      Data_relatorio: new Date().toISOString().split('T')[0],
-      Valor_total_de_comps: "R$ 718,14",
-      Gerente_diurno: "ALICE",
-      Gerente_noturno: "QUERSON",
-      Porcentagem_comps2: "1.39%",
-      Porcentagem_comps4: "3.10%",
-      Porcentagem_comps8: "4.54%",
-      Porcentagem_comps11: "90.96%",
-      Porcentagem_comps12: "0%",
-      Porcentagem_comps13: "0%",
-      ...emailFields,
-      Texto_padrao_email: config.textoEmailPadrao
-    };
-
-    await sendWebhook(testReportData);
-  };
-
-  const handleTestEmployeeData = async () => {
-    if (!config.webhookAtivo || !config.webhookUrl) {
-      toast({
-        title: "Webhook não configurado",
-        description: "Configure e ative o webhook antes de testar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const testEmployeeData = {
-      acao: "dados funcionarios",
-      Nome: "Maria",
-      Total_de_comps: "R$ 685,51",
-      Total_de_comps2: "R$ 10,00",
-      Total_de_comps4: "R$ 22,26",
-      Total_de_comps8: "",
-      Total_de_comps11: "R$ 653,25",
-      Total_de_comps12: "",
-      Total_de_comps13: "",
-      Justificativas: "26+65+/ ndwkkd/ teste"
-    };
-
-    await sendWebhook(testEmployeeData);
-  };
-
-  const handleTestAllData = async () => {
-    if (!config.webhookAtivo || !config.webhookUrl) {
-      toast({
-        title: "Webhook não configurado",
-        description: "Configure e ative o webhook antes de testar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Iniciando teste completo",
-      description: "Enviando dados de 2 funcionários + relatório...",
-    });
-
-    // 1. PRIMEIRO: Primeiro funcionário
-    await handleTestEmployeeData();
-    
-    // Aguardar 2 segundos
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 2. SEGUNDO: Segundo funcionário
-    const testEmployee2Data = {
-      acao: "dados funcionarios",
-      Nome: "João",
-      Total_de_comps: "R$ 32,63",
-      Total_de_comps2: "",
-      Total_de_comps4: "",
-      Total_de_comps8: "R$ 32,63",
-      Total_de_comps11: "",
-      Total_de_comps12: "",
-      Total_de_comps13: "",
-      Justificativas: "mml65"
-    };
-
-    await sendWebhook(testEmployee2Data);
-    
-    // Aguardar 2 segundos
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 3. POR ÚLTIMO: Dados do relatório (que dispara o email)
-    // Preparar campos de email (máximo 5) - igual à produção
-    const emailFields: { [key: string]: string } = {};
-    for (let i = 1; i <= 5; i++) {
-      emailFields[`email_destino${i}`] = config.emailsDestino[i - 1] || "";
-    }
-
-    const finalReportData = {
-      acao: "dados relatorio",
-      Data_relatorio: new Date().toISOString().split('T')[0],
-      Valor_total_de_comps: "R$ 718,14",
-      Gerente_diurno: "ALICE",
-      Gerente_noturno: "QUERSON",
-      Porcentagem_comps2: "1.39%",
-      Porcentagem_comps4: "3.10%",
-      Porcentagem_comps8: "4.54%",
-      Porcentagem_comps11: "90.96%",
-      Porcentagem_comps12: "0%",
-      Porcentagem_comps13: "0%",
-      ...emailFields,
-      Texto_padrao_email: config.textoEmailPadrao
-    };
-
-    await sendWebhook(finalReportData);
-
-    toast({
-      title: "Teste completo finalizado",
-      description: "Funcionários enviados primeiro, depois dados do relatório.",
-    });
   };
 
   const addEmail = () => {
@@ -182,10 +32,10 @@ export default function Settings() {
     }
   };
 
-  const removeEmail = (email: string) => {
+  const removeEmail = (emailToRemove: string) => {
     setConfig(prev => ({
       ...prev,
-      emailsDestino: prev.emailsDestino.filter(e => e !== email)
+      emailsDestino: prev.emailsDestino.filter(email => email !== emailToRemove)
     }));
   };
 
@@ -193,11 +43,9 @@ export default function Settings() {
     return (
       <div className="min-h-screen bg-background">
         <Layout title="Configurações">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Carregando configurações...</p>
-            </div>
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-3 text-muted-foreground">Carregando configurações...</span>
           </div>
         </Layout>
       </div>
@@ -209,7 +57,7 @@ export default function Settings() {
       <Layout title="Configurações">
         <div className="space-y-6 animate-fade-in">
           <Tabs defaultValue="geral" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="geral">
                 <Settings2 className="w-4 h-4 mr-2" />
                 Geral
@@ -226,13 +74,9 @@ export default function Settings() {
                 <Send className="w-4 h-4 mr-2" />
                 Webhook
               </TabsTrigger>
-              <TabsTrigger value="testes">
-                <TestTube className="w-4 h-4 mr-2" />
-                Testes
-              </TabsTrigger>
-              <TabsTrigger value="usuarios">
-                <Users className="w-4 h-4 mr-2" />
-                Usuários
+              <TabsTrigger value="historico">
+                <History className="w-4 h-4 mr-2" />
+                Histórico
               </TabsTrigger>
             </TabsList>
 
@@ -248,7 +92,20 @@ export default function Settings() {
                       onChange={(e) => setConfig(prev => ({ ...prev, horaCorte: e.target.value }))}
                     />
                     <p className="text-sm text-muted-foreground">
-                      Horário que define o início/fim do dia operacional
+                      Horário que define quando um novo dia operacional começa (padrão: 05:00)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>URL do Logo</Label>
+                    <Input
+                      type="url"
+                      value={config.logoUrl}
+                      onChange={(e) => setConfig(prev => ({ ...prev, logoUrl: e.target.value }))}
+                      placeholder="https://exemplo.com/logo.png"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      URL da imagem do logo que aparecerá nos relatórios
                     </p>
                   </div>
 
@@ -259,19 +116,15 @@ export default function Settings() {
                       value={config.valorMaximoComp / 100}
                       onChange={(e) => setConfig(prev => ({ 
                         ...prev, 
-                        valorMaximoComp: parseFloat(e.target.value) * 100 
+                        valorMaximoComp: Math.round(parseFloat(e.target.value || "0") * 100)
                       }))}
+                      placeholder="999.99"
                       step="0.01"
+                      min="0"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>URL do Logotipo</Label>
-                    <Input
-                      value={config.logoUrl}
-                      onChange={(e) => setConfig(prev => ({ ...prev, logoUrl: e.target.value }))}
-                      placeholder="https://..."
-                    />
+                    <p className="text-sm text-muted-foreground">
+                      Valor máximo permitido para um COMP individual
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -282,6 +135,19 @@ export default function Settings() {
                 <h3 className="text-lg font-semibold mb-4">Configurações de E-mail</h3>
                 <div className="space-y-6">
                   <div className="space-y-2">
+                    <Label>Texto Padrão do E-mail</Label>
+                    <Textarea
+                      value={config.textoEmailPadrao}
+                      onChange={(e) => setConfig(prev => ({ ...prev, textoEmailPadrao: e.target.value }))}
+                      placeholder="Digite o texto que aparecerá no corpo do e-mail..."
+                      rows={4}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Texto que será incluído no corpo do e-mail enviado com o relatório
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
                     <Label>E-mails de Destino</Label>
                     <div className="flex gap-2">
                       <Input
@@ -289,35 +155,37 @@ export default function Settings() {
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
                         placeholder="email@exemplo.com"
-                        onKeyDown={(e) => e.key === 'Enter' && addEmail()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addEmail();
+                          }
+                        }}
                       />
                       <Button onClick={addEmail} variant="outline">
                         Adicionar
                       </Button>
                     </div>
+                    
                     <div className="space-y-2">
-                      {config.emailsDestino.map((email) => (
-                        <div key={email} className="flex justify-between items-center p-2 bg-muted rounded">
+                      {config.emailsDestino.map((email, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                           <span className="text-sm">{email}</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => removeEmail(email)}
+                            className="text-destructive hover:text-destructive"
                           >
-                            ✕
+                            Remover
                           </Button>
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Texto Padrão do E-mail</Label>
-                    <Textarea
-                      value={config.textoEmailPadrao}
-                      onChange={(e) => setConfig(prev => ({ ...prev, textoEmailPadrao: e.target.value }))}
-                      rows={4}
-                    />
+                    
+                    <p className="text-sm text-muted-foreground">
+                      E-mails que receberão o relatório de fechamento diário
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -325,13 +193,13 @@ export default function Settings() {
 
             <TabsContent value="fluxo">
               <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Preferências de Cadastro</h3>
+                <h3 className="text-lg font-semibold mb-4">Configurações de Fluxo</h3>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label>Manter Tipo Selecionado</Label>
+                      <Label>Manter Tipo de COMP Selecionado</Label>
                       <p className="text-sm text-muted-foreground">
-                        Manter o tipo de COMP selecionado entre lançamentos
+                        Após registrar um COMP, manter o tipo selecionado para o próximo
                       </p>
                     </div>
                     <Switch
@@ -344,9 +212,9 @@ export default function Settings() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label>Manter Waiter Selecionado</Label>
+                      <Label>Manter Atendente Selecionado</Label>
                       <p className="text-sm text-muted-foreground">
-                        Manter o atendente selecionado entre lançamentos
+                        Após registrar um COMP, manter o atendente selecionado para o próximo
                       </p>
                     </div>
                     <Switch
@@ -357,19 +225,27 @@ export default function Settings() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Haptic Feedback</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Vibrar ao salvar um COMP
-                      </p>
+                  <div className="space-y-2">
+                    <Label>Foco Após Salvar COMP</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={config.focoAposSalvar === "valor" ? "default" : "outline"}
+                        onClick={() => setConfig(prev => ({ ...prev, focoAposSalvar: "valor" }))}
+                        className="justify-start"
+                      >
+                        Campo Valor
+                      </Button>
+                      <Button
+                        variant={config.focoAposSalvar === "motivo" ? "default" : "outline"}
+                        onClick={() => setConfig(prev => ({ ...prev, focoAposSalvar: "motivo" }))}
+                        className="justify-start"
+                      >
+                        Campo Motivo
+                      </Button>
                     </div>
-                    <Switch
-                      checked={config.hapticFeedback}
-                      onCheckedChange={(checked) => 
-                        setConfig(prev => ({ ...prev, hapticFeedback: checked }))
-                      }
-                    />
+                    <p className="text-sm text-muted-foreground">
+                      Qual campo deve receber foco automaticamente após salvar um COMP
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -410,106 +286,22 @@ export default function Settings() {
 
                   <div className="p-4 bg-info/10 rounded-lg border border-info/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <Globe className="h-4 w-4 text-info" />
-                      <span className="font-medium text-info">Como configurar</span>
+                      <Send className="h-4 w-4 text-info" />
+                      <span className="font-medium text-info">Como funciona</span>
                     </div>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• No Zapier: Criar um Zap com trigger "Webhooks by Zapier"</li>
-                      <li>• Copiar a URL do webhook gerada</li>
-                      <li>• Colar aqui e ativar a integração</li>
-                      <li>• Os dados serão enviados automaticamente após confirmar o fechamento</li>
-                    </ul>
-                  </div>
-
-                  {config.webhookAtivo && config.webhookUrl && (
-                    <Button
-                      variant="outline"
-                      onClick={handleTestWebhook}
-                      className="w-full"
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Testar Webhook
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="testes">
-              <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Testes de Webhook</h3>
-                <div className="space-y-6">
-                  <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TestTube className="h-4 w-4 text-warning" />
-                      <span className="font-medium text-warning">Importante</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Os testes enviam dados realistas para validar a integração com o n8n.
-                      Certifique-se de que o webhook está configurado e ativo.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4">
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Teste de Dados do Relatório</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Testa o envio dos dados gerais do fechamento (data, gerentes, percentuais, valor total)
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={handleTestReportData}
-                        className="w-full"
-                        disabled={!config.webhookAtivo || !config.webhookUrl}
-                      >
-                        <Send className="w-4 h-4 mr-2" />
-                        Testar Dados do Relatório
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Teste de Dados do Funcionário</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Testa o envio dos dados individuais de um funcionário
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={handleTestEmployeeData}
-                        className="w-full"
-                        disabled={!config.webhookAtivo || !config.webhookUrl}
-                      >
-                        <Users className="w-4 h-4 mr-2" />
-                        Testar Dados do Funcionário
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Teste Completo</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Simula o fluxo completo: 2 funcionários + relatório final (como no fechamento real)
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={handleTestAllData}
-                        className="w-full"
-                        disabled={!config.webhookAtivo || !config.webhookUrl}
-                      >
-                        <TestTube className="w-4 h-4 mr-2" />
-                        Executar Teste Completo
-                      </Button>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>• Primeiro são enviados os dados individuais de cada funcionário</p>
+                      <p>• Por último são enviados os dados gerais do relatório (que dispara o e-mail)</p>
+                      <p>• Cada envio tem um intervalo de 2 segundos</p>
+                      <p>• Use ferramentas como Zapier, Make ou n8n para processar os dados</p>
                     </div>
                   </div>
                 </div>
               </Card>
             </TabsContent>
 
-            <TabsContent value="usuarios">
-              <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Gerenciamento de Usuários</h3>
-                <p className="text-muted-foreground">
-                  Funcionalidade em desenvolvimento. Use a aba "Gestão" no menu para gerenciar waiters e gerentes.
-                </p>
-              </Card>
+            <TabsContent value="historico">
+              <ReportHistory />
             </TabsContent>
           </Tabs>
 

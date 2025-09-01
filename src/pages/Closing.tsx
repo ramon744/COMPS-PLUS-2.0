@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -202,6 +203,26 @@ export default function Closing() {
       };
 
       await sendWebhook(generalData);
+      
+      // Registrar o fechamento na tabela closings
+      const { error: closingError } = await supabase
+        .from('closings')
+        .insert({
+          dia_operacional: operationalDay,
+          periodo_inicio_local: new Date(`${operationalDay}T${config.horaCorte}:00`).toISOString(),
+          periodo_fim_local: new Date().toISOString(),
+          total_valor_centavos: Math.round(closingSummary.totalValue * 100),
+          total_qtd: closingSummary.totalQuantity,
+          fechado_por: user?.id,
+          fechado_em_local: new Date().toISOString(),
+          enviado_para: config.emailsDestino,
+          observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config.webhookUrl}`,
+        });
+
+      if (closingError) {
+        console.error('Erro ao registrar fechamento:', closingError);
+        // Não falhar o fechamento por causa disso, apenas logar
+      }
       
       currentStep++;
       setProgress(100);
