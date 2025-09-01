@@ -205,18 +205,21 @@ export default function Closing() {
       await sendWebhook(generalData);
       
       // Registrar o fechamento na tabela closings
+      const agora = new Date();
+      const inicioOperacional = new Date(`${operationalDay}T${config?.horaCorte || '05:00'}:00.000Z`);
+      
       const { error: closingError } = await supabase
         .from('closings')
         .insert({
           dia_operacional: operationalDay,
-          periodo_inicio_local: new Date(`${operationalDay}T${config.horaCorte}:00`).toISOString(),
-          periodo_fim_local: new Date().toISOString(),
+          periodo_inicio_local: inicioOperacional.toISOString(),
+          periodo_fim_local: agora.toISOString(),
           total_valor_centavos: Math.round(closingSummary.totalValue * 100),
           total_qtd: closingSummary.totalQuantity,
           fechado_por: user?.id,
-          fechado_em_local: new Date().toISOString(),
-          enviado_para: config.emailsDestino,
-          observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config.webhookUrl}`,
+          fechado_em_local: agora.toISOString(),
+          enviado_para: config?.emailsDestino || [],
+          observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}`,
         });
 
       if (closingError) {

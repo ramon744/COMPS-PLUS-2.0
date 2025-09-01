@@ -43,7 +43,7 @@ export function useReportHistory() {
           fechado_em_local,
           enviado_para,
           observacao,
-          profiles!closings_fechado_por_fkey(nome)
+          fechado_por
         `)
         .gte('dia_operacional', thirtyDaysAgo.toISOString().split('T')[0])
         .order('dia_operacional', { ascending: false });
@@ -59,7 +59,7 @@ export function useReportHistory() {
         diaOperacional: closing.dia_operacional,
         totalValor: closing.total_valor_centavos / 100, // Converter centavos para reais
         totalQuantidade: closing.total_qtd,
-        fechadoPor: closing.profiles?.nome || 'Desconhecido',
+        fechadoPor: 'Sistema', // Simplificado por enquanto
         fechadoEm: new Date(closing.fechado_em_local).toLocaleString('pt-BR'),
         enviadoPara: closing.enviado_para || [],
         observacao: closing.observacao,
