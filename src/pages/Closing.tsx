@@ -268,16 +268,18 @@ export default function Closing() {
               {closingSummary.byType.map((type) => {
                 const percentage = closingSummary.totalValue > 0 ? (type.value / closingSummary.totalValue * 100) : 0;
                 return (
-                  <div key={type.name} className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary">{type.name}</Badge>
-                      <span className="text-sm">{type.count} ocorrências</span>
-                      <div className="flex items-center gap-1">
-                        <Percent className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</span>
+                  <div key={type.name} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      <Badge variant="secondary" className="w-fit">{type.name}</Badge>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                        <span className="text-sm">{type.count} ocorrências</span>
+                        <div className="flex items-center gap-1">
+                          <Percent className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</span>
+                        </div>
                       </div>
                     </div>
-                    <span className="font-bold">{formatCurrency(type.value)}</span>
+                    <span className="font-bold text-right sm:text-left">{formatCurrency(type.value)}</span>
                   </div>
                 );
               })}
@@ -292,12 +294,12 @@ export default function Closing() {
             </div>
             <div className="space-y-3">
               {closingSummary.byWaiter.map((waiter) => (
-                <div key={waiter.name} className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
+                <div key={waiter.name} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                     <span className="font-medium">{waiter.name}</span>
                     <span className="text-sm text-muted-foreground">{waiter.count} COMPs</span>
                   </div>
-                  <span className="font-bold">{formatCurrency(waiter.value)}</span>
+                  <span className="font-bold text-right sm:text-left">{formatCurrency(waiter.value)}</span>
                 </div>
               ))}
             </div>
