@@ -59,12 +59,8 @@ export default function Closing() {
   // Get real data from context
   const closingSummary = getClosingData();
 
-  const operationalDay = formatOperationalDayDisplay(currentOperationalDay);
-  const [year, month, day] = currentOperationalDay.split('-');
-  const startDate = `${day}/${month} 05:00`;
-  const nextDay = new Date(parseInt(year), parseInt(month) - 1, parseInt(day) + 1);
-  const endDate = `${nextDay.getDate().toString().padStart(2, '0')}/${(nextDay.getMonth() + 1).toString().padStart(2, '0')} 04:59:59`;
-  const period = `${startDate} às ${endDate}`;
+  const operationalDay = currentOperationalDay; // Usar formato ISO (YYYY-MM-DD) diretamente
+  const operationalDayDisplay = formatOperationalDayDisplay(currentOperationalDay); // Para exibição apenas
 
   const formatCurrency = (cents: number) => {
     return (cents / 100).toLocaleString("pt-BR", {
@@ -267,8 +263,8 @@ export default function Closing() {
           <Card className="p-6 bg-gradient-card shadow-card">
             <div className="text-center">
               <h2 className="text-lg font-semibold text-muted-foreground">Fechamento do Dia Operacional</h2>
-              <p className="text-2xl font-bold text-primary mt-1">{operationalDay}</p>
-              <p className="text-sm text-muted-foreground mt-2">{period}</p>
+              <p className="text-2xl font-bold text-primary mt-1">{new Date(operationalDay).toLocaleDateString('pt-BR')}</p>
+              <p className="text-sm text-muted-foreground mt-2">{operationalDayDisplay}</p>
             </div>
           </Card>
 
