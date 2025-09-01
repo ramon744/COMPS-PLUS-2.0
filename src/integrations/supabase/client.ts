@@ -2,8 +2,17 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Debug: Verificar variáveis de ambiente
+console.log('🔍 DEBUG - Variáveis de ambiente:');
+console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'PRESENTE' : 'AUSENTE');
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://dplfodkrsaffzljmteub.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas";
+
+console.log('🔧 DEBUG - URLs finais:');
+console.log('SUPABASE_URL:', SUPABASE_URL);
+console.log('SUPABASE_PUBLISHABLE_KEY:', SUPABASE_PUBLISHABLE_KEY.substring(0, 20) + '...');
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
