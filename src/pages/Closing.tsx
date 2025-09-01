@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ import { useRegistry } from "@/contexts/RegistryContext";
 import { useSettings } from "@/hooks/useSettings";
 
 export default function Closing() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { getClosingData } = useComps();
   const { sendWebhook } = useWebhook();
@@ -187,6 +189,11 @@ export default function Closing() {
         title: "Dia fechado com sucesso!",
         description: "Todos os dados foram enviados para o webhook configurado.",
       });
+      
+      // Redirecionar para a página principal após 2 segundos
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
       
     } catch (error) {
       console.error('Erro no fechamento:', error);
