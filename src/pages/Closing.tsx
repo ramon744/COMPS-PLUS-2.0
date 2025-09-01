@@ -200,55 +200,7 @@ export default function Closing() {
 
       await sendWebhook(generalData);
       
-      // Registrar o fechamento na tabela closings
-      const agora = new Date();
-      
-      // Garantir formato correto da hora de corte
-      const horaCorte = config?.horaCorte || '05:00';
-      const horaCorteFormatada = horaCorte.includes(':') ? horaCorte : '05:00';
-      
-      console.log('🔍 DEBUG - Dados para criar data:', {
-        operationalDay,
-        horaCorte,
-        horaCorteFormatada,
-        stringCompleta: `${operationalDay}T${horaCorteFormatada}:00.000Z`
-      });
-      
-      const inicioOperacional = new Date(`${operationalDay}T${horaCorteFormatada}:00.000Z`);
-      
-      // Validar se a data foi criada corretamente
-      if (isNaN(inicioOperacional.getTime())) {
-        console.error('❌ ERRO - Data inválida criada:', {
-          operationalDay,
-          horaCorteFormatada,
-          stringCompleta: `${operationalDay}T${horaCorteFormatada}:00.000Z`
-        });
-        throw new Error('Data de início operacional inválida');
-      }
-      
-      console.log('✅ DEBUG - Data criada com sucesso:', {
-        inicioOperacional: inicioOperacional.toISOString(),
-        agora: agora.toISOString()
-      });
-      
-      const { error: closingError } = await supabase
-        .from('closings')
-        .insert({
-          dia_operacional: operationalDay,
-          periodo_inicio_local: inicioOperacional.toISOString(),
-          periodo_fim_local: agora.toISOString(),
-          total_valor_centavos: Math.round(closingSummary.totalValue * 100),
-          total_qtd: closingSummary.totalQuantity,
-          fechado_por: user?.id,
-          fechado_em_local: agora.toISOString(),
-          enviado_para: config?.emailsDestino || [],
-          observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}`,
-        });
-
-      if (closingError) {
-        console.error('Erro ao registrar fechamento:', closingError);
-        // Não falhar o fechamento por causa disso, apenas logar
-      }
+      console.log('✅ Webhook enviado com sucesso - Fechamento concluído sem registrar na tabela closings temporariamente');
       
       currentStep++;
       setProgress(100);
