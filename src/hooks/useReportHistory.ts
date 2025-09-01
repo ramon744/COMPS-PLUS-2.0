@@ -33,6 +33,11 @@ export function useReportHistory() {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
+      console.log('🔍 DEBUG - Buscando histórico de relatórios:', {
+        thirtyDaysAgo: thirtyDaysAgo.toISOString().split('T')[0],
+        userId: user?.id
+      });
+
       const { data: closings, error } = await supabase
         .from('closings')
         .select(`
@@ -47,6 +52,12 @@ export function useReportHistory() {
         `)
         .gte('dia_operacional', thirtyDaysAgo.toISOString().split('T')[0])
         .order('dia_operacional', { ascending: false });
+
+      console.log('🔍 DEBUG - Resultado da busca de histórico:', {
+        closings,
+        error,
+        count: closings?.length || 0
+      });
 
       if (error) {
         console.error('Erro ao carregar histórico de relatórios:', error);
