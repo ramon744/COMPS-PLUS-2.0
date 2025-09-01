@@ -40,10 +40,12 @@ import { useWebhook } from "@/hooks/useWebhook";
 import { useOperationalDay } from "@/hooks/useOperationalDay";
 import { useRegistry } from "@/contexts/RegistryContext";
 import { useSettings } from "@/hooks/useSettings";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Closing() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { getClosingData } = useComps();
   const { sendWebhook } = useWebhook();
   const { currentOperationalDay, formatOperationalDayDisplay } = useOperationalDay();
@@ -212,7 +214,7 @@ export default function Closing() {
         
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        console.log(`🔥 CACHE BREAK v2.0.0 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
+        console.log(`🔥 CACHE BREAK v2.0.1 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
           operationalDay,
           agora: agora.toISOString(),
           inicioOperacional: inicioOperacional.toISOString(),
@@ -239,7 +241,7 @@ export default function Closing() {
           console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
           // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log(`✅ FECHAMENTO REGISTRADO COM SUCESSO v2.0.0 [${TIMESTAMP_CACHE_BREAK}]`);
+          console.log(`✅ FECHAMENTO REGISTRADO COM SUCESSO v2.0.1 [${TIMESTAMP_CACHE_BREAK}]`);
         }
       } catch (error) {
         console.error('❌ Erro ao processar registro do fechamento:', error);
