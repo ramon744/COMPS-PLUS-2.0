@@ -121,37 +121,6 @@ export function CompForm({
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
         <div className="space-y-4 sm:space-y-6">
-          {/* Tipo de COMP */}
-          <div className="space-y-2">
-            <Label className="text-sm sm:text-base font-medium">
-              Tipo de COMP <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={formData.compTypeId}
-              onValueChange={(value) => updateFormData("compTypeId", value)}
-            >
-              <SelectTrigger className={cn(
-                "h-10 sm:h-11 text-sm sm:text-base",
-                errors.compTypeId ? "border-destructive" : ""
-              )}>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {compTypes
-                  .filter(type => type.ativo)
-                  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-                  .map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.codigo} - {type.nome}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            {errors.compTypeId && (
-              <p className="text-xs sm:text-sm text-destructive">{errors.compTypeId}</p>
-            )}
-          </div>
-
           {/* Atendente */}
           <div className="space-y-2">
             <Label className="text-sm sm:text-base font-medium">
@@ -178,7 +147,7 @@ export function CompForm({
               <PopoverContent 
                 className="w-[calc(100vw-2rem)] sm:w-[--radix-popover-trigger-width] p-0 z-50" 
                 align="start"
-                side="top"
+                side="bottom"
                 sideOffset={4}
                 avoidCollisions={false}
                 style={{
@@ -225,6 +194,37 @@ export function CompForm({
             </Popover>
             {errors.waiterId && (
               <p className="text-xs sm:text-sm text-destructive">{errors.waiterId}</p>
+            )}
+          </div>
+
+          {/* Tipo de COMP */}
+          <div className="space-y-2">
+            <Label className="text-sm sm:text-base font-medium">
+              Tipo de COMP <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={formData.compTypeId}
+              onValueChange={(value) => updateFormData("compTypeId", value)}
+            >
+              <SelectTrigger className={cn(
+                "h-10 sm:h-11 text-sm sm:text-base",
+                errors.compTypeId ? "border-destructive" : ""
+              )}>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {compTypes
+                  .filter(type => type.ativo)
+                  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                  .map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.codigo} - {type.nome}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {errors.compTypeId && (
+              <p className="text-xs sm:text-sm text-destructive">{errors.compTypeId}</p>
             )}
           </div>
 
