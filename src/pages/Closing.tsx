@@ -202,7 +202,34 @@ export default function Closing() {
       
       // Registrar o fechamento na tabela closings
       const agora = new Date();
-      const inicioOperacional = new Date(`${operationalDay}T${config?.horaCorte || '05:00'}:00.000Z`);
+      
+      // Garantir formato correto da hora de corte
+      const horaCorte = config?.horaCorte || '05:00';
+      const horaCorteFormatada = horaCorte.includes(':') ? horaCorte : '05:00';
+      
+      console.log('🔍 DEBUG - Dados para criar data:', {
+        operationalDay,
+        horaCorte,
+        horaCorteFormatada,
+        stringCompleta: `${operationalDay}T${horaCorteFormatada}:00.000Z`
+      });
+      
+      const inicioOperacional = new Date(`${operationalDay}T${horaCorteFormatada}:00.000Z`);
+      
+      // Validar se a data foi criada corretamente
+      if (isNaN(inicioOperacional.getTime())) {
+        console.error('❌ ERRO - Data inválida criada:', {
+          operationalDay,
+          horaCorteFormatada,
+          stringCompleta: `${operationalDay}T${horaCorteFormatada}:00.000Z`
+        });
+        throw new Error('Data de início operacional inválida');
+      }
+      
+      console.log('✅ DEBUG - Data criada com sucesso:', {
+        inicioOperacional: inicioOperacional.toISOString(),
+        agora: agora.toISOString()
+      });
       
       const { error: closingError } = await supabase
         .from('closings')
