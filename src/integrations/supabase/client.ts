@@ -13,6 +13,7 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJh
 console.log('🔧 DEBUG - URLs finais:');
 console.log('SUPABASE_URL:', SUPABASE_URL);
 console.log('SUPABASE_PUBLISHABLE_KEY:', SUPABASE_PUBLISHABLE_KEY.substring(0, 20) + '...');
+console.log('🔑 DEBUG - Chave completa:', SUPABASE_PUBLISHABLE_KEY);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
