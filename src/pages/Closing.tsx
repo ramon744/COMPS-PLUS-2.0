@@ -190,10 +190,13 @@ export default function Closing() {
         description: "Todos os dados foram enviados para o webhook configurado.",
       });
       
-      // Redirecionar para a página principal após 2 segundos
+      // Fechar o diálogo imediatamente
+      setShowManagerForm(false);
+      
+      // Redirecionar para a página principal após 1 segundo
       setTimeout(() => {
         navigate('/');
-      }, 2000);
+      }, 1000);
       
     } catch (error) {
       console.error('Erro no fechamento:', error);
@@ -204,7 +207,6 @@ export default function Closing() {
       });
     } finally {
       setIsClosing(false);
-      setShowManagerForm(false);
       setProgress(0);
     }
   };
