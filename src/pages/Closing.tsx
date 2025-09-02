@@ -57,6 +57,8 @@ export default function Closing() {
   const [nightManager, setNightManager] = useState("");
   const [reportDate, setReportDate] = useState(currentOperationalDay);
   const [progress, setProgress] = useState(0);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [hasExistingClosing, setHasExistingClosing] = useState(false);
 
   // Get real data from context
   const closingSummary = getClosingData();
@@ -73,8 +75,52 @@ export default function Closing() {
 
   const hasIssues = false; // Verificar se há pendências
   
-  const handleInitialClosing = () => {
+  // Verificar se já existe fechamento para o dia operacional
+  const checkExistingClosing = async () => {
+    try {
+      const { data: existingClosing, error } = await supabase
+        .from('closings')
+        .select('id, fechado_em_local, total_valor_centavos, total_qtd')
+        .eq('dia_operacional', operationalDay)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Erro ao verificar fechamento existente:', error);
+        return false;
+      }
+
+      if (existingClosing) {
+        console.log('⚠️ Fechamento já existe para hoje:', existingClosing);
+        setHasExistingClosing(true);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Erro ao verificar fechamento existente:', error);
+      return false;
+    }
+  };
+  
+  const handleInitialClosing = async () => {
+    // Verificar se já existe fechamento antes de mostrar o formulário
+    const hasExisting = await checkExistingClosing();
+    
+    if (hasExisting) {
+      setShowDuplicateWarning(true);
+    } else {
+      setShowManagerForm(true);
+    }
+  };
+
+  const handleDuplicateClosing = () => {
+    setShowDuplicateWarning(false);
     setShowManagerForm(true);
+  };
+
+  const handleCancelDuplicate = () => {
+    setShowDuplicateWarning(false);
+    setHasExistingClosing(false);
   };
 
   const handleFinalClosing = async () => {
@@ -214,7 +260,7 @@ export default function Closing() {
         
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        console.log(`🚀 ORDEM NO SERVIDOR v2.0.5 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
+        console.log(`⚠️ AVISO DUPLICADO v2.0.6 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
           operationalDay,
           agora: agora.toISOString(),
           inicioOperacional: inicioOperacional.toISOString(),
@@ -241,7 +287,7 @@ export default function Closing() {
           console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
           // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log(`🎉 SUCESSO TOTAL v2.0.5 [${TIMESTAMP_CACHE_BREAK}] - ORDEM NO SERVIDOR!`);
+          console.log(`🎉 SUCESSO TOTAL v2.0.6 [${TIMESTAMP_CACHE_BREAK}] - AVISO DUPLICADO FUNCIONANDO!`);
         }
       } catch (error) {
         console.error('❌ Erro ao processar registro do fechamento:', error);
@@ -570,6 +616,46 @@ export default function Closing() {
                     className="flex-1 bg-gradient-primary"
                   >
                     {isClosing ? "Enviando..." : "Finalizar Fechamento"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog de Aviso de Fechamento Duplicado */}
+          <Dialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>⚠️ Fechamento Já Realizado</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="p-4 bg-warning/10 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    <span className="font-medium text-warning">Atenção</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Já foi realizado um fechamento para o dia operacional <strong>{operationalDayDisplay}</strong>.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Se você enviar novamente, será criado um novo registro no histórico. 
+                    Tem certeza que deseja continuar?
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelDuplicate}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleDuplicateClosing}
+                    className="flex-1 bg-warning hover:bg-warning/90"
+                  >
+                    Sim, Enviar Novamente
                   </Button>
                 </div>
               </div>

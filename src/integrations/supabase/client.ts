@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Debug: Verificar variáveis de ambiente (v2)
-console.log('🚀 ORDEM NO SERVIDOR v2.0.5 - Variáveis de ambiente:');
+console.log('⚠️ AVISO DUPLICADO v2.0.6 - Variáveis de ambiente:');
 console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
 console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'PRESENTE' : 'AUSENTE');
 
