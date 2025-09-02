@@ -51,7 +51,8 @@ export function useReportHistory() {
           fechado_por
         `)
         .gte('dia_operacional', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('fechado_em_local', { ascending: false }); // Mais recente primeiro por horário exato
+        .order('fechado_em_local', { ascending: false }) // Mais recente primeiro por horário exato
+        .order('dia_operacional', { ascending: false }); // Fallback por data operacional
 
       console.log('🔍 DEBUG - Resultado da busca de histórico:', {
         closings,
@@ -75,6 +76,12 @@ export function useReportHistory() {
         enviadoPara: closing.enviado_para || [],
         observacao: closing.observacao,
       }));
+
+      console.log('🔍 DEBUG - Relatórios do servidor (já ordenados):', {
+        total: formattedReports.length,
+        primeiro: formattedReports[0]?.fechadoEm,
+        ultimo: formattedReports[formattedReports.length - 1]?.fechadoEm
+      });
 
       setReports(formattedReports);
     } catch (error) {
