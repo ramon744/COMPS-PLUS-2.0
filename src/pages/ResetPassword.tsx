@@ -21,11 +21,25 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Verificar se há token de recuperação na URL
-  const accessToken = searchParams.get('access_token');
-  const refreshToken = searchParams.get('refresh_token');
-  const errorParam = searchParams.get('error');
-  const errorDescription = searchParams.get('error_description');
+  // Verificar se há token de recuperação na URL (query params ou fragment)
+  const getParamFromUrlOrFragment = (param: string) => {
+    // Primeiro tenta query params
+    const queryParam = searchParams.get(param);
+    if (queryParam) return queryParam;
+    
+    // Se não encontrar, tenta no fragment
+    const hash = window.location.hash;
+    if (hash) {
+      const fragmentParams = new URLSearchParams(hash.substring(1));
+      return fragmentParams.get(param);
+    }
+    return null;
+  };
+
+  const accessToken = getParamFromUrlOrFragment('access_token');
+  const refreshToken = getParamFromUrlOrFragment('refresh_token');
+  const errorParam = getParamFromUrlOrFragment('error');
+  const errorDescription = getParamFromUrlOrFragment('error_description');
 
   useEffect(() => {
     console.log('🔧 DEBUG - ResetPassword params:', {
