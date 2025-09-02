@@ -78,37 +78,45 @@ export default function Closing() {
   // Verificar se já existe fechamento para o dia operacional
   const checkExistingClosing = async () => {
     try {
+      console.log('🔍 Verificando fechamento existente para:', operationalDay);
+      
       const { data: existingClosing, error } = await supabase
         .from('closings')
         .select('id, fechado_em_local, total_valor_centavos, total_qtd')
-        .eq('dia_operacional', operationalDay)
-        .single();
+        .eq('dia_operacional', operationalDay);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Erro ao verificar fechamento existente:', error);
+      if (error) {
+        console.error('❌ Erro ao verificar fechamento existente:', error);
         return false;
       }
 
-      if (existingClosing) {
+      if (existingClosing && existingClosing.length > 0) {
         console.log('⚠️ Fechamento já existe para hoje:', existingClosing);
         setHasExistingClosing(true);
         return true;
       }
 
+      console.log('✅ Nenhum fechamento encontrado para hoje');
       return false;
     } catch (error) {
-      console.error('Erro ao verificar fechamento existente:', error);
+      console.error('❌ Erro ao verificar fechamento existente:', error);
       return false;
     }
   };
   
   const handleInitialClosing = async () => {
+    console.log('🔍 DEBUG - Verificando fechamento duplicado para:', operationalDay);
+    
     // Verificar se já existe fechamento antes de mostrar o formulário
     const hasExisting = await checkExistingClosing();
     
+    console.log('🔍 DEBUG - Resultado da verificação:', { hasExisting, operationalDay });
+    
     if (hasExisting) {
+      console.log('⚠️ AVISO: Fechamento duplicado detectado!');
       setShowDuplicateWarning(true);
     } else {
+      console.log('✅ OK: Nenhum fechamento duplicado, continuando...');
       setShowManagerForm(true);
     }
   };
@@ -260,7 +268,7 @@ export default function Closing() {
         
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        console.log(`⚠️ AVISO DUPLICADO v2.0.6 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
+        console.log(`🔧 CORREÇÃO HTTP 406 v2.0.7 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
           operationalDay,
           agora: agora.toISOString(),
           inicioOperacional: inicioOperacional.toISOString(),
@@ -287,7 +295,7 @@ export default function Closing() {
           console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
           // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log(`🎉 SUCESSO TOTAL v2.0.6 [${TIMESTAMP_CACHE_BREAK}] - AVISO DUPLICADO FUNCIONANDO!`);
+          console.log(`🎉 SUCESSO TOTAL v2.0.7 [${TIMESTAMP_CACHE_BREAK}] - AVISO DUPLICADO FUNCIONANDO!`);
         }
       } catch (error) {
         console.error('❌ Erro ao processar registro do fechamento:', error);
