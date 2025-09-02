@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle, Lock, Mail, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowLeft, CheckCircle, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +20,7 @@ const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const { signIn, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -28,8 +30,17 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(''); // Limpar erro anterior
+    
     const { error } = await signIn(usuario, senha);
-    if (!error) {
+    if (error) {
+      // Personalizar mensagem de erro
+      if (error.includes('Invalid login credentials')) {
+        setLoginError('Email ou senha incorretos. Verifique suas credenciais.');
+      } else {
+        setLoginError(error);
+      }
+    } else {
       navigate(from, { replace: true });
     }
   };
@@ -227,6 +238,13 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {loginError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{loginError}</AlertDescription>
+              </Alert>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="usuario">Usuário</Label>
