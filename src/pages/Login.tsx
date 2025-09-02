@@ -9,6 +9,9 @@ import { ArrowLeft, CheckCircle, Lock, Mail, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// CACHE BREAK FORÇADO - v2.0.9
+console.log('🚀 CACHE BREAK FORÇADO v2.0.9 - Timestamp:', Date.now());
+
 const Login = () => {
   const [usuario, setUsuario] = useState('');
   const [senha, setSenha] = useState('');
@@ -269,6 +272,19 @@ const Login = () => {
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
                 Esqueci minha senha
+              </Button>
+              
+              {/* BOTÃO DE TESTE TEMPORÁRIO - REMOVER APÓS DEPLOY */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  console.log('🚀 TESTE: Botão de recuperação clicado!');
+                  setShowForgotPassword(true);
+                }}
+                className="text-sm text-red-600 hover:text-red-700 mt-2"
+              >
+                🧪 TESTE: Recuperar Senha
               </Button>
             </div>
 
