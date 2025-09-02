@@ -66,9 +66,17 @@ const Login = () => {
         return;
       }
 
-      // Enviar email de recuperação via Supabase
+      // Enviar email de recuperação via Supabase com configurações mais robustas
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: 'https://comps-plus-54.vercel.app/reset-password',
+        options: {
+          // Dados extras para identificar o usuário
+          data: {
+            email: email.trim(),
+            timestamp: new Date().toISOString(),
+            source: 'password_reset'
+          }
+        }
       });
 
       if (resetError) {

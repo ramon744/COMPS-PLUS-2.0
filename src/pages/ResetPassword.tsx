@@ -51,9 +51,13 @@ const ResetPassword = () => {
     });
 
     if (errorParam) {
-      setError(`Erro: ${errorDescription || errorParam}`);
+      if (errorParam === 'access_denied' && errorDescription?.includes('expired')) {
+        setError('Link de recuperação expirado. Por favor, solicite um novo link através da tela de login.');
+      } else {
+        setError(`Erro: ${errorDescription || errorParam}`);
+      }
     } else if (!accessToken || !refreshToken) {
-      setError('Link de recuperação inválido ou expirado.');
+      setError('Link de recuperação inválido ou expirado. Solicite um novo link.');
     }
   }, [accessToken, refreshToken, errorParam, errorDescription]);
 
@@ -275,6 +279,22 @@ const ResetPassword = () => {
               >
                 Voltar ao Login
               </Button>
+
+              {(errorParam === 'access_denied' || !accessToken) && (
+                <div className="text-center mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Link expirado? Solicite um novo através da tela de login.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => navigate('/login', { replace: true })}
+                    className="text-sm"
+                  >
+                    Ir para Login → Esqueci minha senha
+                  </Button>
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>
