@@ -24,12 +24,24 @@ const ResetPassword = () => {
   // Verificar se há token de recuperação na URL
   const accessToken = searchParams.get('access_token');
   const refreshToken = searchParams.get('refresh_token');
+  const errorParam = searchParams.get('error');
+  const errorDescription = searchParams.get('error_description');
 
   useEffect(() => {
-    if (!accessToken || !refreshToken) {
+    console.log('🔧 DEBUG - ResetPassword params:', {
+      accessToken: accessToken ? 'PRESENTE' : 'AUSENTE',
+      refreshToken: refreshToken ? 'PRESENTE' : 'AUSENTE',
+      error: errorParam,
+      errorDescription: errorDescription,
+      fullURL: window.location.href
+    });
+
+    if (errorParam) {
+      setError(`Erro: ${errorDescription || errorParam}`);
+    } else if (!accessToken || !refreshToken) {
       setError('Link de recuperação inválido ou expirado.');
     }
-  }, [accessToken, refreshToken]);
+  }, [accessToken, refreshToken, errorParam, errorDescription]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +65,22 @@ const ResetPassword = () => {
     setError('');
 
     try {
+      console.log('🔧 DEBUG - Iniciando atualização de senha...');
+      
+      // Primeiro, estabelecer a sessão com os tokens
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken!,
+        refresh_token: refreshToken!
+      });
+
+      if (sessionError) {
+        console.error('Erro ao estabelecer sessão:', sessionError);
+        setError('Token de recuperação inválido ou expirado.');
+        return;
+      }
+
+      console.log('✅ Sessão estabelecida com sucesso');
+
       // Atualizar a senha usando o token de recuperação
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
@@ -63,6 +91,8 @@ const ResetPassword = () => {
         setError('Erro ao atualizar senha. Tente novamente.');
         return;
       }
+
+      console.log('✅ Senha atualizada com sucesso');
 
       setIsSuccess(true);
       toast({
