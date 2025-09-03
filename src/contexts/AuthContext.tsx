@@ -24,12 +24,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authUser?.email) return authUser;
 
     try {
-      // Buscar dados do perfil na tabela profiles
-      const { data: profile, error } = await supabase
+      // Timeout para evitar travamento na busca do perfil
+      const profilePromise = supabase
         .from('profiles')
         .select('nome, email, role')
         .eq('email', authUser.email)
         .single();
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 5000);
+      });
+
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
       if (!error && profile) {
         // Mesclar dados do auth com dados do perfil
@@ -44,45 +50,152 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.log('Aviso: Não foi possível carregar perfil do usuário');
+        console.log('Aviso: Não foi possível carregar perfil do usuário:', error);
       }
+      // Em caso de erro, retornar o usuário básico para não travar a autenticação
     }
 
     return authUser;
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    let isMounted = true;
+    let currentlyLoading = true;
+    
+    // Timeout de segurança para evitar loading infinito
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && currentlyLoading) {
+        console.warn('⚠️ Timeout de segurança ativado - forçando setIsLoading(false)');
+        setIsLoading(false);
+        currentlyLoading = false;
+      }
+    }, 10000); // 10 segundos máximo
+
+    const handleAuthStateChange = async (event: any, session: any) => {
+      try {
+        if (!isMounted) return;
+        
+        if (import.meta.env.DEV) {
+          console.log('🔐 Auth state change:', event, !!session);
+        }
+        
         setSession(session);
         
         if (session?.user) {
           const enrichedUser = await loadUserProfile(session.user);
-          setUser(enrichedUser);
+          if (isMounted) {
+            setUser(enrichedUser);
+          }
         } else {
-          setUser(null);
+          if (isMounted) {
+            setUser(null);
+          }
         }
         
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          currentlyLoading = false;
+          clearTimeout(safetyTimeout);
+        }
+      } catch (error) {
+        console.error('Erro no handleAuthStateChange:', error);
+        if (isMounted) {
+          // Em caso de erro, limpar tudo e parar o loading
+          setSession(null);
+          setUser(null);
+          setIsLoading(false);
+          currentlyLoading = false;
+          clearTimeout(safetyTimeout);
+        }
       }
-    );
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      
-      if (session?.user) {
-        const enrichedUser = await loadUserProfile(session.user);
-        setUser(enrichedUser);
-      } else {
-        setUser(null);
+    const initializeSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Erro ao obter sessão:', error);
+          if (isMounted) {
+            setSession(null);
+            setUser(null);
+            setIsLoading(false);
+            clearTimeout(safetyTimeout);
+          }
+          return;
+        }
+        
+        if (!isMounted) return;
+        
+        setSession(session);
+        
+        if (session?.user) {
+          const enrichedUser = await loadUserProfile(session.user);
+          if (isMounted) {
+            setUser(enrichedUser);
+          }
+        } else {
+          if (isMounted) {
+            setUser(null);
+          }
+        }
+        
+        if (isMounted) {
+          setIsLoading(false);
+          currentlyLoading = false;
+          clearTimeout(safetyTimeout);
+        }
+      } catch (error) {
+        console.error('Erro na inicialização da sessão:', error);
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
+          setIsLoading(false);
+          currentlyLoading = false;
+          clearTimeout(safetyTimeout);
+        }
       }
-      
-      setIsLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initializeSession();
+
+    // Verificação periódica da sessão para detectar problemas
+    const sessionCheckInterval = setInterval(async () => {
+      if (!isMounted) return;
+      
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Erro na verificação periódica da sessão:', error);
+          if (isMounted && currentlyLoading) {
+            console.log('🔄 Forçando parada do loading devido a erro de sessão');
+            setIsLoading(false);
+            currentlyLoading = false;
+            clearTimeout(safetyTimeout);
+          }
+        }
+      } catch (error) {
+        console.error('Erro na verificação periódica:', error);
+        if (isMounted && currentlyLoading) {
+          console.log('🔄 Forçando parada do loading devido a erro de conectividade');
+          setIsLoading(false);
+          currentlyLoading = false;
+          clearTimeout(safetyTimeout);
+        }
+      }
+    }, 5000); // Verificar a cada 5 segundos
+
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimeout);
+      clearInterval(sessionCheckInterval);
+      subscription.unsubscribe();
+    };
   }, []);
 
 

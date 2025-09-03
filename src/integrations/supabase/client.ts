@@ -35,6 +35,9 @@ export const supabase = createClient<Database>(url, key, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
+    // Configurações para lidar com third-party cookies bloqueados
+    storageKey: 'supabase.auth.token',
+    flowType: 'pkce',
   },
   realtime: {
     params: {
