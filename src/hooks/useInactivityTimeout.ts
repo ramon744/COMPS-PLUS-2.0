@@ -53,6 +53,11 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
 
   // Função para mostrar aviso de logout iminente
   const showWarning = useCallback(() => {
+    // Evitar múltiplas chamadas
+    if (isWarningVisible) {
+      return;
+    }
+
     setIsWarningVisible(true);
     setRemainingTime(opts.warningTime);
     
@@ -80,7 +85,7 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
     warningTimeoutRef.current = setTimeout(() => {
       performAutoLogout();
     }, opts.warningTime);
-  }, [opts.warningTime, performAutoLogout]);
+  }, [opts.warningTime, performAutoLogout, isWarningVisible]);
 
   // Função para resetar os timers
   const resetTimeout = useCallback(() => {
@@ -126,7 +131,7 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
     resetTimeout();
   }, [resetTimeout]);
 
-  // Configurar listeners de eventos
+  // Configurar listeners de eventos - apenas uma vez
   useEffect(() => {
     if (!user) {
       return;
@@ -145,26 +150,20 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
       document.addEventListener(event, handleActivity, true);
     });
 
-    // Iniciar o timer
-    resetTimeout();
-
     // Cleanup
     return () => {
       opts.events.forEach(event => {
         document.removeEventListener(event, handleActivity, true);
       });
-      
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (warningTimeoutRef.current) {
-        clearTimeout(warningTimeoutRef.current);
-      }
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
     };
-  }, [user, opts.events, resetTimeout, isWarningVisible]);
+  }, [user, opts.events, isWarningVisible, resetTimeout]);
+
+  // Iniciar timer quando o usuário faz login
+  useEffect(() => {
+    if (user && !isWarningVisible) {
+      resetTimeout();
+    }
+  }, [user, resetTimeout, isWarningVisible]);
 
   // Limpar timers quando o usuário faz logout
   useEffect(() => {
