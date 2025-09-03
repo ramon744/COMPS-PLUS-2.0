@@ -2,23 +2,34 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Debug: Verificar variáveis de ambiente (v2.1.0)
-console.log('🔑 RECUPERAÇÃO DE SENHA v2.1.0 - CACHE BREAK - Variáveis de ambiente:');
-console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-console.log('VITE_SUPABASE_PUBLISHABLE_KEY:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? 'PRESENTE' : 'AUSENTE');
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://dplfodkrsaffzljmteub.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas";
+// Validação de variáveis de ambiente em desenvolvimento
+if (import.meta.env.DEV) {
+  if (!SUPABASE_URL) {
+    console.error('❌ VITE_SUPABASE_URL não configurada');
+  }
+  if (!SUPABASE_PUBLISHABLE_KEY) {
+    console.error('❌ VITE_SUPABASE_PUBLISHABLE_KEY não configurada');
+  }
+}
 
-console.log('🔧 DEBUG - URLs finais:');
-console.log('SUPABASE_URL:', SUPABASE_URL);
-console.log('SUPABASE_PUBLISHABLE_KEY:', SUPABASE_PUBLISHABLE_KEY.substring(0, 20) + '...');
-console.log('🔑 DEBUG - Chave completa:', SUPABASE_PUBLISHABLE_KEY);
+// Fallback apenas para desenvolvimento local
+const fallbackUrl = import.meta.env.DEV ? "https://dplfodkrsaffzljmteub.supabase.co" : "";
+const fallbackKey = import.meta.env.DEV ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas" : "";
+
+const url = SUPABASE_URL || fallbackUrl;
+const key = SUPABASE_PUBLISHABLE_KEY || fallbackKey;
+
+if (!url || !key) {
+  throw new Error('Configuração do Supabase não encontrada. Configure as variáveis de ambiente.');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(url, key, {
   auth: {
     storage: localStorage,
     persistSession: true,
@@ -37,14 +48,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
 });
 
-// Teste direto de conexão
-console.log('🧪 TESTE - Testando conexão direta...');
-supabase.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    console.error('❌ ERRO - Falha na conexão:', error);
-  } else {
-    console.log('✅ SUCESSO - Conexão estabelecida:', data.session ? 'Usuário logado' : 'Sem sessão');
-  }
-}).catch((error) => {
-  console.error('❌ ERRO - Exceção na conexão:', error);
-});
+// Teste de conexão apenas em desenvolvimento
+if (import.meta.env.DEV) {
+  supabase.auth.getSession().then(({ error }) => {
+    if (error) {
+      console.error('❌ Erro na conexão Supabase:', error.message);
+    }
+  }).catch(() => {
+    // Silenciar erros em produção
+  });
+}

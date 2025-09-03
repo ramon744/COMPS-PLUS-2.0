@@ -26,11 +26,15 @@ export function useReports() {
         const managerIds = [...new Set(comps.map(comp => comp.gerenteId))].filter(Boolean);
         
         if (managerIds.length === 0) {
-          console.log('No manager IDs found in comps');
+          if (import.meta.env.DEV) {
+            console.log('No manager IDs found in comps');
+          }
           return;
         }
 
-        console.log('Loading profiles for manager IDs:', managerIds);
+        if (import.meta.env.DEV) {
+          console.log('Loading profiles for manager IDs:', managerIds.length);
+        }
 
         const { data, error } = await supabase
           .from('profiles')
@@ -42,7 +46,9 @@ export function useReports() {
           throw error;
         }
         
-        console.log('Loaded manager profiles:', data);
+        if (import.meta.env.DEV) {
+          console.log('Loaded manager profiles:', data.length);
+        }
         setManagerProfiles(data || []);
       } catch (error) {
         console.error('Error loading manager profiles:', error);

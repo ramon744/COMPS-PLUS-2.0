@@ -21,6 +21,7 @@ interface RegistryContextType {
   updateManager: (id: string, manager: Partial<Manager>) => Promise<void>;
   toggleManagerStatus: (id: string) => Promise<void>;
   deleteManager: (id: string) => Promise<void>;
+  syncManagersWithProfiles: () => Promise<void>;
   getActiveCompTypes: () => CompType[];
   getActiveWaiters: () => Waiter[];
   getActiveManagers: () => Manager[];
@@ -42,10 +43,7 @@ const initialWaiters: Waiter[] = [
   { id: "3", nome: "Ana Costa", matricula: "003", ativo: false, criadoEm: "2024-01-01" },
 ];
 
-const initialManagers: Manager[] = [
-  { id: "1", nome: "Alice Costa", usuario: "alice", senha: "123456", tipoAcesso: "qualquer_ip", ativo: true, criadoEm: "2024-01-01" },
-  { id: "2", nome: "Roberto Santos", usuario: "roberto", senha: "123456", tipoAcesso: "qualquer_ip", ativo: true, criadoEm: "2024-01-01" },
-];
+const initialManagers: Manager[] = [];
 
 export function RegistryProvider({ children }: { children: ReactNode }) {
   const [compTypes, setCompTypes] = useState<CompType[]>([]);
@@ -241,9 +239,11 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         criadoEm: item.created_at
       }));
       
-      console.log('📊 Waiters carregados do servidor:', transformedWaiters.length);
-      console.log('📋 Waiters ativos:', transformedWaiters.filter(w => w.ativo).length);
-      console.log('📋 Waiters inativos:', transformedWaiters.filter(w => !w.ativo).length);
+      if (import.meta.env.DEV) {
+        console.log('📊 Waiters carregados do servidor:', transformedWaiters.length);
+        console.log('📋 Waiters ativos:', transformedWaiters.filter(w => w.ativo).length);
+        console.log('📋 Waiters inativos:', transformedWaiters.filter(w => !w.ativo).length);
+      }
       
       setWaiters(transformedWaiters);
 
@@ -259,7 +259,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
       })));
 
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading data');
       toast.error('Erro ao carregar dados do servidor');
       // Use initial data as fallback
       setCompTypes(initialCompTypes);
@@ -469,6 +469,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
 
   const addManager = async (managerData: Omit<Manager, 'id' | 'criadoEm'>) => {
     try {
+      // 1. Inserir na tabela managers
       const { data, error } = await supabase
         .from('managers')
         .insert({
@@ -495,6 +496,23 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         criadoEm: data.created_at
       };
 
+      // 2. Sincronizar com a tabela profiles se existir
+      try {
+        const { error: profilesError } = await supabase
+          .from('profiles')
+          .update({ nome: managerData.nome })
+          .eq('email', managerData.usuario);
+
+        if (profilesError && import.meta.env.DEV) {
+          console.log('Aviso: Não foi possível sincronizar com profiles:', profilesError.message);
+        }
+      } catch (syncError) {
+        if (import.meta.env.DEV) {
+          console.log('Aviso: Erro na sincronização com profiles:', syncError);
+        }
+        // Não falhar a operação principal por causa da sincronização
+      }
+
       setManagers(prev => [newManager, ...prev]);
       toast.success('Gerente adicionado com sucesso!');
     } catch (error) {
@@ -505,7 +523,8 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
 
   const updateManager = async (id: string, updatedData: Partial<Manager>) => {
     try {
-      const { error } = await supabase
+      // 1. Atualizar a tabela managers
+      const { error: managersError } = await supabase
         .from('managers')
         .update({
           nome: updatedData.nome,
@@ -517,13 +536,44 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         })
         .eq('id', id);
 
-      if (error) throw error;
+      if (managersError) throw managersError;
 
+      // 2. Sincronizar com a tabela profiles se o nome foi alterado
+      if (updatedData.nome) {
+        try {
+          // Buscar o gerente atualizado para obter o email
+          const { data: managerData, error: fetchError } = await supabase
+            .from('managers')
+            .select('usuario')
+            .eq('id', id)
+            .single();
+
+          if (!fetchError && managerData) {
+            // Atualizar o perfil correspondente na tabela profiles
+            const { error: profilesError } = await supabase
+              .from('profiles')
+              .update({ nome: updatedData.nome })
+              .eq('email', managerData.usuario);
+
+            if (profilesError && import.meta.env.DEV) {
+              console.log('Aviso: Não foi possível sincronizar com profiles:', profilesError.message);
+            }
+          }
+        } catch (syncError) {
+          if (import.meta.env.DEV) {
+            console.log('Aviso: Erro na sincronização com profiles:', syncError);
+          }
+          // Não falhar a operação principal por causa da sincronização
+        }
+      }
+
+      // 3. Atualizar estado local
       setManagers(prev => prev.map(manager => 
         manager.id === id 
           ? { ...manager, ...updatedData }
           : manager
       ));
+      
       toast.success('Gerente atualizado com sucesso!');
     } catch (error) {
       console.error('Error updating manager:', error);
@@ -617,6 +667,56 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Função para sincronizar todos os gerentes com a tabela profiles
+  const syncManagersWithProfiles = async () => {
+    try {
+      if (import.meta.env.DEV) {
+        console.log('🔄 Sincronizando gerentes com profiles...');
+      }
+
+      let syncedCount = 0;
+      let errorCount = 0;
+
+      for (const manager of managers) {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ nome: manager.nome })
+            .eq('email', manager.usuario);
+
+          if (error) {
+            if (import.meta.env.DEV) {
+              console.log(`❌ Erro ao sincronizar ${manager.nome}:`, error.message);
+            }
+            errorCount++;
+          } else {
+            syncedCount++;
+          }
+        } catch (syncError) {
+          if (import.meta.env.DEV) {
+            console.log(`❌ Erro ao sincronizar ${manager.nome}:`, syncError);
+          }
+          errorCount++;
+        }
+      }
+
+      if (import.meta.env.DEV) {
+        console.log(`✅ Sincronização concluída: ${syncedCount} sucessos, ${errorCount} erros`);
+      }
+
+      if (errorCount === 0) {
+        toast.success('Sincronização concluída com sucesso!');
+      } else if (syncedCount > 0) {
+        toast.success(`Sincronização parcial: ${syncedCount} atualizados, ${errorCount} com erro`);
+      } else {
+        toast.error('Erro na sincronização');
+      }
+    } catch (error) {
+      console.error('Error syncing managers with profiles:', error);
+      toast.error('Erro na sincronização');
+    }
+  };
+
 
   const getActiveWaiters = () => {
     return waiters
@@ -673,6 +773,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
     updateManager,
     toggleManagerStatus,
     deleteManager,
+    syncManagersWithProfiles,
     getActiveCompTypes,
     getActiveWaiters,
     getActiveManagers,

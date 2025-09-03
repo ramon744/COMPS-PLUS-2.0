@@ -43,7 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      console.log('Criando conta para:', email, name);
+      if (import.meta.env.DEV) {
+        console.log('Criando conta para:', email);
+      }
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -56,22 +58,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.log('Erro ao criar conta:', error);
+        if (import.meta.env.DEV) {
+          console.log('Erro ao criar conta:', error.message);
+        }
         return { error: error.message };
       }
 
-      console.log('Conta criada com sucesso:', data);
+      if (import.meta.env.DEV) {
+        console.log('Conta criada com sucesso');
+      }
       toast.success('Conta criada com sucesso!');
       return { error: null };
     } catch (error) {
-      console.error('Erro na criação da conta:', error);
+      console.error('Erro interno na criação da conta');
       return { error: "Erro interno na criação da conta" };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('Tentando login com email:', email);
+      if (import.meta.env.DEV) {
+        console.log('Tentativa de login');
+      }
       
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -79,15 +87,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.log('Erro no Supabase Auth:', error);
+        if (import.meta.env.DEV) {
+          console.log('Erro no login:', error.message);
+        }
         return { error: error.message };
       }
 
-      console.log('Login realizado com sucesso no Supabase Auth');
+      if (import.meta.env.DEV) {
+        console.log('Login realizado com sucesso');
+      }
       toast.success('Login realizado com sucesso!');
       return { error: null };
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('Erro interno no login');
       return { error: "Erro interno do sistema" };
     }
   };

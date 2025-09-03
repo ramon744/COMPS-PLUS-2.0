@@ -147,10 +147,12 @@ export function CompProvider({ children }: { children: ReactNode }) {
         atualizadoEm: item.updated_at
       }));
 
-      console.log('Carregando COMPs do servidor:', transformedComps.length);
+      if (import.meta.env.DEV) {
+        console.log('Carregando COMPs do servidor:', transformedComps.length);
+      }
       setComps(transformedComps);
     } catch (error) {
-      console.error('Error loading comps:', error);
+      console.error('Error loading comps');
       toast.error('Erro ao carregar COMPs do servidor');
     } finally {
       setIsLoading(false);

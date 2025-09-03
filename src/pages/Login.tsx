@@ -11,7 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 // CACHE BREAK FORÇADO - v2.1.0
-console.log('🚀 CACHE BREAK FORÇADO v2.1.0 - Timestamp:', Date.now());
+if (import.meta.env.DEV) {
+  console.log('🚀 CACHE BREAK FORÇADO v2.1.0 - Timestamp:', Date.now());
+}
 
 const Login = () => {
   const [usuario, setUsuario] = useState('');

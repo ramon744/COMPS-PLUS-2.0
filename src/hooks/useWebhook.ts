@@ -9,17 +9,15 @@ export function useWebhook() {
   // Enviar dados para o webhook
   const sendWebhook = async (data: any) => {
     if (!config.webhookAtivo || !config.webhookUrl) {
-      console.log('Webhook não está configurado ou ativo:', { 
-        ativo: config.webhookAtivo, 
-        url: config.webhookUrl 
-      });
+      if (import.meta.env.DEV) {
+        console.log('Webhook não está configurado ou ativo');
+      }
       return;
     }
 
-    console.log('Enviando dados para webhook:', { 
-      url: config.webhookUrl, 
-      data 
-    });
+    if (import.meta.env.DEV) {
+      console.log('Enviando dados para webhook');
+    }
 
     try {
       const response = await fetch(config.webhookUrl, {
@@ -39,7 +37,9 @@ export function useWebhook() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      console.log('Webhook enviado com sucesso:', response.status);
+      if (import.meta.env.DEV) {
+        console.log('Webhook enviado com sucesso:', response.status);
+      }
       
       toast({
         title: "Webhook enviado",
