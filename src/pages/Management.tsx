@@ -58,7 +58,6 @@ export default function Management() {
     updateManager,
     toggleManagerStatus,
     deleteManager,
-    syncManagersWithProfiles,
   } = useRegistry();
   const [editingCompType, setEditingCompType] = useState<CompType | null>(null);
   const [editingWaiter, setEditingWaiter] = useState<Waiter | null>(null);
@@ -451,26 +450,16 @@ export default function Management() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Gerentes</h3>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={syncManagersWithProfiles}
-                      variant="outline"
-                      className="shadow-button"
-                      title="Sincronizar nomes dos gerentes com perfis"
-                    >
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      Sincronizar
-                    </Button>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          onClick={() => setEditingManager({} as Manager)}
-                          className="bg-gradient-primary shadow-button"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Novo Gerente
-                        </Button>
-                      </DialogTrigger>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        onClick={() => setEditingManager({} as Manager)}
+                        className="bg-gradient-primary shadow-button"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Novo Gerente
+                      </Button>
+                    </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>

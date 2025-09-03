@@ -30,27 +30,38 @@ export function useManagerStatus() {
     }
 
     try {
-      console.log('🔍 Iniciando verificação de status para:', user?.email);
+      if (import.meta.env.DEV) {
+        console.log('🔍 Iniciando verificação de status para:', user?.email);
+      }
       setStatus(prev => ({ ...prev, isLoading: true, error: null }));
 
-      const { data: managerData, error } = await supabase
+      // Timeout de 10 segundos para a consulta
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na consulta')), 10000);
+      });
+
+      const queryPromise = supabase
         .from('managers')
         .select('id, nome, ativo, tipo_acesso, ip_permitido')
         .eq('usuario', user?.email)
         .eq('ativo', true)
         .single();
 
-      console.log('📊 Resultado da consulta:', { managerData, error });
+      const { data: managerData, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+      if (import.meta.env.DEV) {
+        console.log('📊 Resultado da consulta:', { managerData, error });
+      }
 
       if (error) {
-        console.log('❌ Erro na consulta:', error);
+        if (import.meta.env.DEV) {
+          console.log('❌ Erro na consulta:', error);
+        }
         
         // Tratar diferentes tipos de erro
         let errorMessage = 'Erro ao verificar status';
         if (error.code === 'PGRST116') {
-          errorMessage = 'Gerente não encontrado';
-        } else if (error.code === 'PGRST116') {
-          errorMessage = 'Gerente não encontrado';
+          errorMessage = 'Gerente não encontrado ou inativo';
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -65,7 +76,9 @@ export function useManagerStatus() {
       }
 
       if (!managerData) {
-        console.log('❌ Gerente não encontrado ou inativo:', user?.email);
+        if (import.meta.env.DEV) {
+          console.log('❌ Gerente não encontrado ou inativo:', user?.email);
+        }
         setStatus({
           isActive: false,
           isLoading: false,
@@ -75,7 +88,9 @@ export function useManagerStatus() {
         return;
       }
 
-      console.log('✅ Gerente ativo encontrado:', managerData);
+      if (import.meta.env.DEV) {
+        console.log('✅ Gerente ativo encontrado:', managerData);
+      }
       setStatus({
         isActive: true,
         isLoading: false,

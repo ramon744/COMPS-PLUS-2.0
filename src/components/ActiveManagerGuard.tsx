@@ -18,13 +18,15 @@ export function ActiveManagerGuard({ children, fallback }: ActiveManagerGuardPro
   const [retryCount, setRetryCount] = React.useState(0);
   const navigate = useNavigate();
 
-  // Timeout de segurança - se demorar mais de 15 segundos, mostrar erro
+  // Timeout de segurança - se demorar mais de 8 segundos, mostrar erro
   React.useEffect(() => {
     if (isLoading) {
       const timer = setTimeout(() => {
-        console.log('⏰ Timeout de segurança atingido');
+        if (import.meta.env.DEV) {
+          console.log('⏰ Timeout de segurança atingido');
+        }
         setTimeoutReached(true);
-      }, 15000);
+      }, 8000);
 
       return () => clearTimeout(timer);
     }
