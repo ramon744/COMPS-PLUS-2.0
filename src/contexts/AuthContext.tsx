@@ -19,20 +19,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Função para carregar dados do perfil
+  const loadUserProfile = async (authUser: any) => {
+    if (!authUser?.email) return authUser;
+
+    try {
+      // Buscar dados do perfil na tabela profiles
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('nome, email, role')
+        .eq('email', authUser.email)
+        .single();
+
+      if (!error && profile) {
+        // Mesclar dados do auth com dados do perfil
+        return {
+          ...authUser,
+          user_metadata: {
+            ...authUser.user_metadata,
+            name: profile.nome || authUser.user_metadata?.name || authUser.email,
+            role: profile.role
+          }
+        };
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.log('Aviso: Não foi possível carregar perfil do usuário');
+      }
+    }
+
+    return authUser;
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const enrichedUser = await loadUserProfile(session.user);
+          setUser(enrichedUser);
+        } else {
+          setUser(null);
+        }
+        
         setIsLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const enrichedUser = await loadUserProfile(session.user);
+        setUser(enrichedUser);
+      } else {
+        setUser(null);
+      }
+      
       setIsLoading(false);
     });
 
