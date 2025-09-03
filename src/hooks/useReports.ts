@@ -103,7 +103,10 @@ export function useReports() {
       const quantidade = dayComps.length;
       
       return {
-        dia: new Date(day).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        dia: (() => {
+          const [year, month, dayNum] = day.split('-');
+          return new Date(parseInt(year), parseInt(month) - 1, parseInt(dayNum)).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        })(),
         valor,
         quantidade,
       };

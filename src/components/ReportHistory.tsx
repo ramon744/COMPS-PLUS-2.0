@@ -48,7 +48,10 @@ export function ReportHistory() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
                     <span className="font-medium">
-                      {new Date(report.diaOperacional).toLocaleDateString('pt-BR')}
+                      {(() => {
+                        const [year, month, day] = report.diaOperacional.split('-');
+                        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toLocaleDateString('pt-BR');
+                      })()}
                     </span>
                     <Badge variant="secondary" className="ml-2">
                       {report.enviadoPara.length > 0 ? 'Enviado' : 'Não Enviado'}

@@ -342,7 +342,10 @@ export default function Closing() {
           <Card className="p-6 bg-gradient-card shadow-card">
             <div className="text-center">
               <h2 className="text-lg font-semibold text-muted-foreground">Fechamento do Dia Operacional</h2>
-              <p className="text-2xl font-bold text-primary mt-1">{new Date(operationalDay).toLocaleDateString('pt-BR')}</p>
+              <p className="text-2xl font-bold text-primary mt-1">{(() => {
+                const [year, month, day] = operationalDay.split('-');
+                return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toLocaleDateString('pt-BR');
+              })()}</p>
               <p className="text-sm text-muted-foreground mt-2">{operationalDayDisplay}</p>
             </div>
           </Card>
@@ -401,12 +404,12 @@ export default function Closing() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                       <Badge variant="secondary" className="w-fit">{type.name}</Badge>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                        <span className="text-sm">{type.count} ocorrências</span>
-                        <div className="flex items-center gap-1">
-                          <Percent className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</span>
-                        </div>
+                      <span className="text-sm">{type.count} ocorrências</span>
+                      <div className="flex items-center gap-1">
+                        <Percent className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</span>
                       </div>
+                    </div>
                     </div>
                     <span className="font-bold text-right sm:text-left">{formatCurrency(type.value)}</span>
                   </div>
@@ -569,10 +572,10 @@ export default function Closing() {
                       {managers
                         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                         .map((manager) => (
-                          <SelectItem key={manager.id} value={manager.nome}>
-                            {manager.nome}
-                          </SelectItem>
-                        ))}
+                        <SelectItem key={manager.id} value={manager.nome}>
+                          {manager.nome}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -591,10 +594,10 @@ export default function Closing() {
                       {managers
                         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                         .map((manager) => (
-                          <SelectItem key={manager.id} value={manager.nome}>
-                            {manager.nome}
-                          </SelectItem>
-                        ))}
+                        <SelectItem key={manager.id} value={manager.nome}>
+                          {manager.nome}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
