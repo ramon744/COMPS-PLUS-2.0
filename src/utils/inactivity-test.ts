@@ -53,12 +53,7 @@ export const logInactivityStatus = (lastActivity: number) => {
 
 // Configuração para usar durante desenvolvimento
 export const getInactivityConfig = () => {
-  // Em desenvolvimento, usar configuração de teste rápido
-  if (import.meta.env.DEV) {
-    console.log('🧪 Modo de desenvolvimento: usando configuração de teste rápido');
-    return INACTIVITY_TEST_CONFIG.FAST_TEST;
-  }
-  
-  // Em produção, usar configuração real
+  // Usar sempre configuração de produção (2 horas)
+  console.log('⏰ Usando configuração de produção: 2 horas de timeout');
   return INACTIVITY_TEST_CONFIG.PRODUCTION;
 };
