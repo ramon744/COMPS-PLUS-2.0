@@ -59,6 +59,9 @@ export default function Closing() {
   const [progress, setProgress] = useState(0);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [hasExistingClosing, setHasExistingClosing] = useState(false);
+  const [lastClosingTime, setLastClosingTime] = useState<Date | null>(null);
+  const [nextAllowedSendTime, setNextAllowedSendTime] = useState<Date | null>(null);
+  const [remainingMinutes, setRemainingMinutes] = useState<number>(0);
 
   // Get real data from context
   const closingSummary = getClosingData();
@@ -75,6 +78,46 @@ export default function Closing() {
 
   const hasIssues = false; // Verificar se há pendências
   
+  // Contador em tempo real para minutos restantes
+  useEffect(() => {
+    if (!nextAllowedSendTime) {
+      setRemainingMinutes(0);
+      return;
+    }
+
+    const updateRemainingTime = () => {
+      const now = new Date();
+      const timeDiff = nextAllowedSendTime.getTime() - now.getTime();
+      const minutesLeft = Math.ceil(timeDiff / (1000 * 60));
+      
+      if (minutesLeft <= 0) {
+        setRemainingMinutes(0);
+        setNextAllowedSendTime(null);
+        // Recarregar verificação para permitir envio
+        checkExistingClosing().then((status) => {
+          if (status.canSendNow) {
+            setShowDuplicateWarning(false);
+            toast({
+              title: "Pode enviar agora!",
+              description: "O tempo de espera de 30 minutos foi concluído.",
+              duration: 5000,
+            });
+          }
+        });
+      } else {
+        setRemainingMinutes(minutesLeft);
+      }
+    };
+
+    // Atualizar imediatamente
+    updateRemainingTime();
+    
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(updateRemainingTime, 30000);
+    
+    return () => clearInterval(interval);
+  }, [nextAllowedSendTime, toast]);
+  
   // Verificar se já existe fechamento para o dia operacional
   const checkExistingClosing = async () => {
     try {
@@ -83,24 +126,47 @@ export default function Closing() {
       const { data: existingClosing, error } = await supabase
         .from('closings')
         .select('id, fechado_em_local, total_valor_centavos, total_qtd')
-        .eq('dia_operacional', operationalDay);
+        .eq('dia_operacional', operationalDay)
+        .order('fechado_em_local', { ascending: false });
 
       if (error) {
         console.error('❌ Erro ao verificar fechamento existente:', error);
-        return false;
+        return { hasExisting: false, canSendNow: true, nextAllowedTime: null };
       }
 
       if (existingClosing && existingClosing.length > 0) {
         console.log('⚠️ Fechamento já existe para hoje:', existingClosing);
+        
+        // Verificar se o último fechamento foi há menos de 30 minutos
+        const lastClosingTime = new Date(existingClosing[0].fechado_em_local);
+        const now = new Date();
+        const timeDiffMinutes = (now.getTime() - lastClosingTime.getTime()) / (1000 * 60);
+        
+        console.log('🕒 Tempo desde último fechamento:', timeDiffMinutes, 'minutos');
+        
+        if (timeDiffMinutes < 30) {
+          // Calcular quando pode enviar novamente
+          const nextAllowedTime = new Date(lastClosingTime.getTime() + (30 * 60 * 1000));
+          console.log('⏰ Próximo envio permitido às:', nextAllowedTime.toLocaleTimeString('pt-BR'));
+          
+          setHasExistingClosing(true);
+          return { 
+            hasExisting: true, 
+            canSendNow: false, 
+            nextAllowedTime: nextAllowedTime,
+            lastClosingTime: lastClosingTime 
+          };
+        }
+        
         setHasExistingClosing(true);
-        return true;
+        return { hasExisting: true, canSendNow: true, nextAllowedTime: null };
       }
 
       console.log('✅ Nenhum fechamento encontrado para hoje');
-      return false;
+      return { hasExisting: false, canSendNow: true, nextAllowedTime: null };
     } catch (error) {
       console.error('❌ Erro ao verificar fechamento existente:', error);
-      return false;
+      return { hasExisting: false, canSendNow: true, nextAllowedTime: null };
     }
   };
   
@@ -108,13 +174,38 @@ export default function Closing() {
     console.log('🔍 DEBUG - Verificando fechamento duplicado para:', operationalDay);
     
     // Verificar se já existe fechamento antes de mostrar o formulário
-    const hasExisting = await checkExistingClosing();
+    const closingStatus = await checkExistingClosing();
     
-    console.log('🔍 DEBUG - Resultado da verificação:', { hasExisting, operationalDay });
+    console.log('🔍 DEBUG - Resultado da verificação:', { closingStatus, operationalDay });
     
-    if (hasExisting) {
-      console.log('⚠️ AVISO: Fechamento duplicado detectado!');
-      setShowDuplicateWarning(true);
+    if (closingStatus.hasExisting) {
+      if (!closingStatus.canSendNow && closingStatus.nextAllowedTime) {
+        // Armazenar informações de tempo para exibir no modal
+        setLastClosingTime(closingStatus.lastClosingTime || null);
+        setNextAllowedSendTime(closingStatus.nextAllowedTime);
+        
+        // Mostrar aviso de tempo de espera
+        const nextTimeFormatted = closingStatus.nextAllowedTime.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        toast({
+          title: "Aguarde para enviar novamente",
+          description: `Relatórios só podem ser enviados a cada 30 minutos. Próximo envio permitido às ${nextTimeFormatted}.`,
+          variant: "destructive",
+          duration: 8000,
+        });
+        
+        // Mostrar modal com informações detalhadas
+        setShowDuplicateWarning(true);
+        return;
+      } else {
+        console.log('⚠️ AVISO: Fechamento duplicado detectado, mas pode enviar!');
+        setLastClosingTime(closingStatus.lastClosingTime || null);
+        setNextAllowedSendTime(null);
+        setShowDuplicateWarning(true);
+      }
     } else {
       console.log('✅ OK: Nenhum fechamento duplicado, continuando...');
       setShowManagerForm(true);
@@ -137,6 +228,24 @@ export default function Closing() {
         title: "Erro",
         description: "Por favor, preencha os nomes dos gerentes.",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar novamente se pode enviar (verificação de tempo)
+    const closingStatus = await checkExistingClosing();
+    
+    if (closingStatus.hasExisting && !closingStatus.canSendNow && closingStatus.nextAllowedTime) {
+      const nextTimeFormatted = closingStatus.nextAllowedTime.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      toast({
+        title: "Aguarde para enviar novamente",
+        description: `Relatórios só podem ser enviados a cada 30 minutos. Próximo envio permitido às ${nextTimeFormatted}.`,
+        variant: "destructive",
+        duration: 8000,
       });
       return;
     }
@@ -646,12 +755,27 @@ export default function Closing() {
                     <span className="font-medium text-warning">Atenção</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Já foi realizado um fechamento para o dia operacional <strong>{operationalDayDisplay}</strong>.
+                    Já foi realizado um fechamento para o dia operacional <strong>{operationalDayDisplay}</strong>
+                    {lastClosingTime && (
+                      <> às <strong>{lastClosingTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong></>
+                    )}.
                   </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Se você enviar novamente, será criado um novo registro no histórico. 
-                    Tem certeza que deseja continuar?
-                  </p>
+                  
+                  {nextAllowedSendTime ? (
+                    <div className="mt-3 p-3 bg-destructive/10 rounded border border-destructive/20">
+                      <p className="text-sm text-destructive font-medium">
+                        ⏰ Relatórios só podem ser enviados a cada 30 minutos.
+                      </p>
+                      <p className="text-sm text-destructive mt-1">
+                        Próximo envio permitido às: <strong>{nextAllowedSendTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Se você enviar novamente, será criado um novo registro no histórico. 
+                      Tem certeza que deseja continuar?
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
@@ -662,12 +786,21 @@ export default function Closing() {
                   >
                     Cancelar
                   </Button>
-                  <Button 
-                    onClick={handleDuplicateClosing}
-                    className="flex-1 bg-warning hover:bg-warning/90"
-                  >
-                    Sim, Enviar Novamente
-                  </Button>
+                  {nextAllowedSendTime ? (
+                    <Button 
+                      disabled={true}
+                      className="flex-1 bg-muted text-muted-foreground cursor-not-allowed"
+                    >
+                      Aguardar {remainingMinutes} min
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handleDuplicateClosing}
+                      className="flex-1 bg-warning hover:bg-warning/90"
+                    >
+                      Sim, Enviar Novamente
+                    </Button>
+                  )}
                 </div>
               </div>
             </DialogContent>
