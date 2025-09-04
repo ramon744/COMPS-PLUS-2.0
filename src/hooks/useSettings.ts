@@ -56,11 +56,21 @@ export function useSettings() {
         .single();
 
       // Carregar configurações globais (webhook e emails)
-      const { data: globalSettings, error: globalError } = await supabase
-        .from('global_settings')
-        .select('config_value')
-        .eq('config_key', 'global_webhook_settings')
-        .single();
+      let globalSettings = null;
+      let globalError = null;
+      
+      try {
+        const result = await supabase
+          .from('global_settings')
+          .select('config_value')
+          .eq('config_key', 'global_webhook_settings')
+          .single();
+        globalSettings = result.data;
+        globalError = result.error;
+      } catch (error) {
+        console.warn('Aviso: Erro ao carregar configurações globais:', error);
+        globalError = error;
+      }
 
       let finalConfig = { ...defaultConfig };
 
@@ -121,33 +131,40 @@ export function useSettings() {
         emailsDestino
       };
 
-      // Tentar atualizar configurações globais
-      const { error: globalUpdateError } = await supabase
-        .from('global_settings')
-        .update({
-          config_value: globalConfigData as any,
-          updated_by: user.id
-        })
-        .eq('config_key', 'global_webhook_settings');
-
-      // Se não conseguiu fazer update global, fazer insert
-      if (globalUpdateError?.code === 'PGRST116') {
-        const { error: globalInsertError } = await supabase
+      // Tentar atualizar configurações globais com verificações de segurança
+      try {
+        const { error: globalUpdateError } = await supabase
           .from('global_settings')
-          .insert({
-            config_key: 'global_webhook_settings',
+          .update({
             config_value: globalConfigData as any,
-            created_by: user.id,
             updated_by: user.id
-          });
+          })
+          .eq('config_key', 'global_webhook_settings');
 
-        if (globalInsertError) {
-          console.error('Erro ao inserir configurações globais:', globalInsertError);
-          throw globalInsertError;
+        // Se não conseguiu fazer update global, fazer insert
+        if (globalUpdateError?.code === 'PGRST116') {
+          const { error: globalInsertError } = await supabase
+            .from('global_settings')
+            .insert({
+              config_key: 'global_webhook_settings',
+              config_value: globalConfigData as any,
+              created_by: user.id,
+              updated_by: user.id
+            });
+
+          if (globalInsertError) {
+            console.error('Erro ao inserir configurações globais:', globalInsertError);
+            // Não falhar completamente, apenas avisar
+            console.warn('Continuando com salvamento das configurações pessoais...');
+          }
+        } else if (globalUpdateError) {
+          console.error('Erro ao atualizar configurações globais:', globalUpdateError);
+          // Não falhar completamente, apenas avisar
+          console.warn('Continuando com salvamento das configurações pessoais...');
         }
-      } else if (globalUpdateError) {
-        console.error('Erro ao atualizar configurações globais:', globalUpdateError);
-        throw globalUpdateError;
+      } catch (globalSaveError) {
+        console.warn('Aviso: Erro ao salvar configurações globais:', globalSaveError);
+        // Continuar com salvamento pessoal mesmo se global falhar
       }
 
       // Salvar configurações pessoais (incluindo webhook para compatibilidade)

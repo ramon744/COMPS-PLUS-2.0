@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -93,17 +94,14 @@ export default function Closing() {
       if (minutesLeft <= 0) {
         setRemainingMinutes(0);
         setNextAllowedSendTime(null);
-        // Recarregar verificação para permitir envio
-        checkExistingClosing().then((status) => {
-          if (status.canSendNow) {
-            setShowDuplicateWarning(false);
-            toast({
-              title: "Pode enviar agora!",
-              description: "O tempo de espera de 30 minutos foi concluído.",
-              duration: 5000,
-            });
-          }
+        // Apenas notificar que o tempo expirou, sem recarregar automaticamente
+        toast({
+          title: "Pode enviar agora!",
+          description: "O tempo de espera de 30 minutos foi concluído.",
+          duration: 5000,
         });
+        // Fechar o modal automaticamente quando o tempo expirar
+        setShowDuplicateWarning(false);
       } else {
         setRemainingMinutes(minutesLeft);
       }
@@ -747,6 +745,9 @@ export default function Closing() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>⚠️ Fechamento Já Realizado</DialogTitle>
+                <DialogDescription>
+                  Informações sobre o último fechamento e restrições de tempo
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="p-4 bg-warning/10 rounded-lg">
