@@ -23,7 +23,20 @@ const DEFAULT_OPTIONS: InactivityTimeoutOptions = {
 };
 
 export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> = {}) {
-  const { signOut, user } = useAuth();
+  // Verificação de segurança para o contexto de auth
+  let signOut: (() => Promise<void>) | null = null;
+  let user = null;
+  let authError = false;
+  
+  try {
+    const authContext = useAuth();
+    signOut = authContext.signOut;
+    user = authContext.user;
+  } catch (error) {
+    console.warn('⚠️ useInactivityTimeout: AuthContext não disponível');
+    authError = true;
+  }
+  
   const opts = { ...DEFAULT_OPTIONS, ...options };
   
   const [isWarningVisible, setIsWarningVisible] = useState(false);
@@ -36,6 +49,8 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
 
   // Função para fazer logout automático
   const performAutoLogout = useCallback(async () => {
+    if (!signOut || authError) return;
+    
     try {
       if (import.meta.env.DEV) {
         console.log('🔐 Logout automático por inatividade');
@@ -49,7 +64,7 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
     } catch (error) {
       console.error('Erro no logout automático:', error);
     }
-  }, [signOut]);
+  }, [signOut, authError]);
 
   // Função para mostrar aviso de logout iminente
   const showWarning = useCallback(() => {
@@ -133,7 +148,7 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
 
   // Configurar listeners de eventos - apenas uma vez
   useEffect(() => {
-    if (!user) {
+    if (!user || authError) {
       return;
     }
 
@@ -156,14 +171,14 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
         document.removeEventListener(event, handleActivity, true);
       });
     };
-  }, [user, opts.events, isWarningVisible, resetTimeout]);
+  }, [user, authError, opts.events, isWarningVisible, resetTimeout]);
 
   // Iniciar timer quando o usuário faz login
   useEffect(() => {
-    if (user && !isWarningVisible) {
+    if (user && !authError && !isWarningVisible) {
       resetTimeout();
     }
-  }, [user, resetTimeout, isWarningVisible]);
+  }, [user, authError, resetTimeout, isWarningVisible]);
 
   // Limpar timers quando o usuário faz logout
   useEffect(() => {

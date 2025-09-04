@@ -16,12 +16,22 @@ export interface ReportHistory {
 }
 
 export function useReportHistory() {
-  const { user } = useAuth();
+  // Verificação de segurança para o contexto de auth
+  let user = null;
+  let authError = false;
+  
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+  } catch (error) {
+    console.warn('⚠️ useReportHistory: AuthContext não disponível');
+    authError = true;
+  }
   const [reports, setReports] = useState<ReportHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadReportHistory = useCallback(async () => {
-    if (!user) {
+    if (!user || authError) {
       setIsLoading(false);
       return;
     }
@@ -90,18 +100,18 @@ export function useReportHistory() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, authError]);
 
   // Carregar histórico quando o usuário está autenticado
   useEffect(() => {
-    if (user) {
+    if (user && !authError) {
       loadReportHistory();
     }
-  }, [user, loadReportHistory]);
+  }, [user, authError, loadReportHistory]);
 
   // Real-time subscription para mudanças nos fechamentos
   useEffect(() => {
-    if (!user) return;
+    if (!user || authError) return;
 
     const channel = supabase
       .channel('closings-changes')

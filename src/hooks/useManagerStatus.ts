@@ -10,7 +10,17 @@ interface ManagerStatus {
 }
 
 export function useManagerStatus() {
-  const { user } = useAuth();
+  // Verificação de segurança para o contexto de auth
+  let user = null;
+  let authError = false;
+  
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+  } catch (error) {
+    console.warn('⚠️ useManagerStatus: AuthContext não disponível');
+    authError = true;
+  }
   const [status, setStatus] = useState<ManagerStatus>({
     isActive: false,
     isLoading: true,
@@ -19,7 +29,7 @@ export function useManagerStatus() {
   });
 
   const checkManagerStatus = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.email || authError) {
       setStatus({
         isActive: false,
         isLoading: false,
@@ -114,11 +124,11 @@ export function useManagerStatus() {
         managerData: null
       });
     }
-  }, [user?.email]);
+  }, [user?.email, authError]);
 
   // Verificar status quando o usuário mudar
   useEffect(() => {
-    if (user?.email) {
+    if (user?.email && !authError) {
       checkManagerStatus();
     } else {
       setStatus({
@@ -128,7 +138,7 @@ export function useManagerStatus() {
         managerData: null
       });
     }
-  }, [user?.email, checkManagerStatus]);
+  }, [user?.email, authError, checkManagerStatus]);
 
   // Função para refresh manual
   const refreshStatus = useCallback(async () => {
