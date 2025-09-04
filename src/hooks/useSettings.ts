@@ -46,30 +46,49 @@ export function useSettings() {
 
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Carregar configurações pessoais do usuário
+      const { data: userSettings, error: userError } = await supabase
         .from('settings')
         .select('config_value')
         .eq('user_id', user.id)
         .eq('config_key', 'app_settings')
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao carregar configurações:', error);
-        throw error;
+      // Carregar configurações globais (webhook e emails)
+      const { data: globalSettings, error: globalError } = await supabase
+        .from('global_settings')
+        .select('config_value')
+        .eq('config_key', 'global_webhook_settings')
+        .single();
+
+      let finalConfig = { ...defaultConfig };
+
+      // Aplicar configurações pessoais se existirem
+      if (userSettings && !userError) {
+        finalConfig = { ...finalConfig, ...(userSettings.config_value as ConfigData) };
+      } else if (userError && userError.code !== 'PGRST116') {
+        console.error('Erro ao carregar configurações pessoais:', userError);
       }
 
-      if (data) {
-        if (import.meta.env.DEV) {
-          console.log('🔍 DEBUG - Configurações carregadas do banco');
-        }
-        setConfig(data.config_value as any as ConfigData);
-      } else {
-        if (import.meta.env.DEV) {
-          console.log('🔍 DEBUG - Nenhuma configuração encontrada, usando padrão');
-        }
-        // Se não existe configuração, usar padrão
-        setConfig(defaultConfig);
+      // Aplicar configurações globais se existirem (sobrescrever webhook e emails)
+      if (globalSettings && !globalError) {
+        const globalConfig = globalSettings.config_value as any;
+        finalConfig = {
+          ...finalConfig,
+          webhookUrl: globalConfig.webhookUrl || '',
+          webhookAtivo: globalConfig.webhookAtivo || false,
+          emailsDestino: globalConfig.emailsDestino || defaultConfig.emailsDestino
+        };
+      } else if (globalError && globalError.code !== 'PGRST116') {
+        console.error('Erro ao carregar configurações globais:', globalError);
       }
+
+      if (import.meta.env.DEV) {
+        console.log('🔍 DEBUG - Configurações carregadas (pessoais + globais)');
+      }
+      
+      setConfig(finalConfig);
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
       toast({
@@ -92,17 +111,59 @@ export function useSettings() {
     }
 
     try {
-      // Primeiro tenta fazer update
+      // Separar configurações pessoais das globais
+      const { webhookUrl, webhookAtivo, emailsDestino, ...personalConfig } = newConfig;
+      
+      // Salvar configurações globais (webhook e emails)
+      const globalConfigData = {
+        webhookUrl,
+        webhookAtivo,
+        emailsDestino
+      };
+
+      // Tentar atualizar configurações globais
+      const { error: globalUpdateError } = await supabase
+        .from('global_settings')
+        .update({
+          config_value: globalConfigData as any,
+          updated_by: user.id
+        })
+        .eq('config_key', 'global_webhook_settings');
+
+      // Se não conseguiu fazer update global, fazer insert
+      if (globalUpdateError?.code === 'PGRST116') {
+        const { error: globalInsertError } = await supabase
+          .from('global_settings')
+          .insert({
+            config_key: 'global_webhook_settings',
+            config_value: globalConfigData as any,
+            created_by: user.id,
+            updated_by: user.id
+          });
+
+        if (globalInsertError) {
+          console.error('Erro ao inserir configurações globais:', globalInsertError);
+          throw globalInsertError;
+        }
+      } else if (globalUpdateError) {
+        console.error('Erro ao atualizar configurações globais:', globalUpdateError);
+        throw globalUpdateError;
+      }
+
+      // Salvar configurações pessoais (incluindo webhook para compatibilidade)
+      const personalConfigWithWebhook = { ...personalConfig, webhookUrl, webhookAtivo, emailsDestino };
+      
+      // Primeiro tenta fazer update das configurações pessoais
       const { error: updateError } = await supabase
         .from('settings')
         .update({
-          config_value: newConfig as any,
+          config_value: personalConfigWithWebhook as any,
         })
         .eq('user_id', user.id)
         .eq('config_key', 'app_settings');
 
       if (import.meta.env.DEV) {
-        console.log('📝 DEBUG - Resultado do update:', { updateError });
+        console.log('📝 DEBUG - Resultado do update pessoal:', { updateError });
       }
 
       // Se não conseguiu fazer update (registro não existe), faz insert
@@ -115,11 +176,11 @@ export function useSettings() {
           .insert({
             user_id: user.id,
             config_key: 'app_settings',
-            config_value: newConfig as any,
+            config_value: personalConfigWithWebhook as any,
           });
 
         if (import.meta.env.DEV) {
-          console.log('📝 DEBUG - Resultado do insert:', { insertError });
+          console.log('📝 DEBUG - Resultado do insert pessoal:', { insertError });
         }
         if (insertError) {
           console.error('Erro ao inserir configurações:', insertError);
@@ -136,7 +197,7 @@ export function useSettings() {
       localStorage.setItem('app-settings', JSON.stringify(newConfig));
 
       if (import.meta.env.DEV) {
-        console.log('✅ DEBUG - Configurações salvas com sucesso');
+        console.log('✅ DEBUG - Configurações salvas com sucesso (pessoais + globais)');
       }
 
       if (showToast) {
@@ -185,8 +246,22 @@ export function useSettings() {
         },
         (payload) => {
           if (payload.new && (payload.new as any).config_key === 'app_settings') {
-            setConfig((payload.new as any).config_value as ConfigData);
+            // Recarregar todas as configurações para combinar pessoais + globais
+            loadSettings();
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'global_settings',
+          filter: `config_key=eq.global_webhook_settings`,
+        },
+        (payload) => {
+          // Quando configurações globais mudam, recarregar tudo
+          loadSettings();
         }
       )
       .subscribe();
@@ -194,7 +269,7 @@ export function useSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, loadSettings]);
 
   return {
     config,

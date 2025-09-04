@@ -276,6 +276,36 @@ export type Database = {
         }
         Relationships: []
       }
+      global_settings: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string
+          created_by: string
+          id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          config_key: string
+          config_value: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           config_key: string
