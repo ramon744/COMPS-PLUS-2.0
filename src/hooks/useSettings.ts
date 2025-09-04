@@ -84,21 +84,37 @@ export function useSettings() {
       // Aplicar configurações globais se existirem (sobrescrever webhook e emails)
       if (globalSettings && !globalError) {
         const globalConfig = globalSettings.config_value as any;
+        if (import.meta.env.DEV) {
+          console.log('🌍 DEBUG - Configurações globais encontradas:', globalConfig);
+        }
         finalConfig = {
           ...finalConfig,
           webhookUrl: globalConfig.webhookUrl || '',
           webhookAtivo: globalConfig.webhookAtivo || false,
           emailsDestino: globalConfig.emailsDestino || defaultConfig.emailsDestino
         };
+        if (import.meta.env.DEV) {
+          console.log('🌍 DEBUG - Config final após aplicar globais:', {
+            webhookUrl: finalConfig.webhookUrl,
+            webhookAtivo: finalConfig.webhookAtivo,
+            emailsDestino: finalConfig.emailsDestino
+          });
+        }
       } else if (globalError && globalError.code !== 'PGRST116') {
         console.error('Erro ao carregar configurações globais:', globalError);
+      } else if (globalError?.code === 'PGRST116') {
+        console.warn('⚠️ Configurações globais não encontradas, usando configurações pessoais ou padrão');
       }
 
       if (import.meta.env.DEV) {
         console.log('🔍 DEBUG - Configurações carregadas (pessoais + globais)');
+        console.log('🔍 DEBUG - Config final completo:', finalConfig);
       }
       
       setConfig(finalConfig);
+      
+      // Atualizar localStorage com as configurações finais
+      localStorage.setItem('app-settings', JSON.stringify(finalConfig));
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
       toast({

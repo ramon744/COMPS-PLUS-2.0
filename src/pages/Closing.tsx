@@ -253,6 +253,7 @@ export default function Closing() {
       webhookAtivo: config.webhookAtivo,
       webhookUrl: config.webhookUrl,
       webhookUrlTrimmed: config.webhookUrl?.trim(),
+      webhookUrlLength: config.webhookUrl?.length,
       configCompleto: config
     });
 
