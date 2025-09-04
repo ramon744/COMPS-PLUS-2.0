@@ -32,14 +32,25 @@ const defaultConfig: ConfigData = {
 };
 
 export function useSettings() {
-  const { user } = useAuth();
+  // Verificação de segurança para o contexto de auth
+  let user = null;
+  let authError = false;
+  
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+  } catch (error) {
+    console.warn('⚠️ useSettings: AuthContext não disponível, usando configurações padrão');
+    authError = true;
+  }
+  
   const { toast } = useToast();
   const [config, setConfig] = useState<ConfigData>(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
 
   // Carregar configurações do banco de dados
   const loadSettings = useCallback(async () => {
-    if (!user) {
+    if (!user || authError) {
       setIsLoading(false);
       return;
     }
@@ -126,11 +137,11 @@ export function useSettings() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, authError, toast]);
 
   // Função interna para salvar sem dependência circular
   const saveSettingsInternal = useCallback(async (newConfig: ConfigData, showToast = true) => {
-    if (!user) return;
+    if (!user || authError) return;
 
     if (import.meta.env.DEV) {
       console.log('🔍 DEBUG - Salvando configurações');
@@ -249,7 +260,7 @@ export function useSettings() {
         });
       }
     }
-  }, [user, toast]);
+  }, [user, authError, toast]);
 
   // Salvar configurações no banco de dados
   const saveSettings = useCallback(async (newConfig: ConfigData) => {
@@ -258,14 +269,14 @@ export function useSettings() {
 
   // Carregar configurações quando o usuário está autenticado
   useEffect(() => {
-    if (user) {
+    if (user && !authError) {
       loadSettings();
     }
-  }, [user, loadSettings]);
+  }, [user, authError, loadSettings]);
 
   // Real-time subscription para mudanças nas configurações
   useEffect(() => {
-    if (!user) return;
+    if (!user || authError) return;
 
     const channel = supabase
       .channel('settings-changes')
@@ -302,7 +313,7 @@ export function useSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, loadSettings]);
+  }, [user, authError, loadSettings]);
 
   return {
     config,

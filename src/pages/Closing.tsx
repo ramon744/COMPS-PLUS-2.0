@@ -654,6 +654,9 @@ export default function Closing() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Informações dos Gerentes</DialogTitle>
+                <DialogDescription>
+                  Selecione os gerentes responsáveis pelos turnos diurno e noturno
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {isClosing && (
