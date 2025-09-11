@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Mail, Settings2, FileText, Send, History } from "lucide-react";
+import { Save, Mail, Settings2, FileText, Send, History, Trash2 } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import { ReportHistory } from "@/components/ReportHistory";
+import { CleanupStatus } from "@/components/CleanupStatus";
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading } = useSettings();
@@ -58,7 +59,7 @@ export default function Settings() {
       <Layout title="Configurações">
         <div className="space-y-6 animate-fade-in">
           <Tabs defaultValue="geral" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="geral">
                 <Settings2 className="w-4 h-4 mr-2" />
                 Geral
@@ -78,6 +79,10 @@ export default function Settings() {
               <TabsTrigger value="historico">
                 <History className="w-4 h-4 mr-2" />
                 Histórico
+              </TabsTrigger>
+              <TabsTrigger value="limpeza">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Limpeza
               </TabsTrigger>
             </TabsList>
 
@@ -303,6 +308,10 @@ export default function Settings() {
 
             <TabsContent value="historico">
               <ReportHistory />
+            </TabsContent>
+
+            <TabsContent value="limpeza">
+              <CleanupStatus />
             </TabsContent>
 
           </Tabs>
