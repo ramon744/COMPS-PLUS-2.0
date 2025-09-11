@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Menu, User, LogOut, Home, Settings, Users, BarChart3, Send } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,8 @@ export function Layout({ children, title, showBack, onBack }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2">
+              <NotificationBell />
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-white/10 h-8 w-8 sm:h-9 sm:w-9 p-0">

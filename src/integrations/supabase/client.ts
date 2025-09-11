@@ -15,12 +15,9 @@ if (import.meta.env.DEV) {
   }
 }
 
-// Fallback apenas para desenvolvimento local
-const fallbackUrl = import.meta.env.DEV ? "https://dplfodkrsaffzljmteub.supabase.co" : "";
-const fallbackKey = import.meta.env.DEV ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas" : "";
-
-const url = SUPABASE_URL || fallbackUrl;
-const key = SUPABASE_PUBLISHABLE_KEY || fallbackKey;
+// Não usar fallbacks hardcoded em produção
+const url = SUPABASE_URL;
+const key = SUPABASE_PUBLISHABLE_KEY;
 
 if (!url || !key) {
   throw new Error('Configuração do Supabase não encontrada. Configure as variáveis de ambiente.');

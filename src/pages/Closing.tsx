@@ -362,9 +362,8 @@ export default function Closing() {
         Texto_padrao_email: config?.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional."
       };
 
-      await sendWebhook(generalData);
-      
       // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK
+      let closingId = null;
       try {
         const TIMESTAMP_CACHE_BREAK = Date.now(); // Força novo bundle
         const agora = new Date();
@@ -385,7 +384,7 @@ export default function Closing() {
           cacheBreaker: TIMESTAMP_CACHE_BREAK
         });
 
-        const { error: closingError } = await supabase
+        const { data: closingData, error: closingError } = await supabase
           .from('closings')
           .insert({
             dia_operacional: operationalDay,
@@ -397,17 +396,34 @@ export default function Closing() {
             fechado_em_local: agora.toISOString(),
             enviado_para: config?.emailsDestino || [],
             observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}. Cache: ${TIMESTAMP_CACHE_BREAK}`,
-          });
+          })
+          .select('id')
+          .single();
 
         if (closingError) {
           console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
           // Não falhar o fechamento por causa disso, apenas logar
         } else {
-          console.log(`🎉 SUCESSO TOTAL v2.0.7 [${TIMESTAMP_CACHE_BREAK}] - AVISO DUPLICADO FUNCIONANDO!`);
+          closingId = closingData?.id;
+          console.log(`🎉 SUCESSO TOTAL v2.0.7 [${TIMESTAMP_CACHE_BREAK}] - AVISO DUPLICADO FUNCIONANDO! ID: ${closingId}`);
         }
       } catch (error) {
         console.error('❌ Erro ao processar registro do fechamento:', error);
         // Não falhar o fechamento por causa disso, apenas logar
+      }
+
+      // Enviar webhook com ID de fechamento
+      if (closingId) {
+        const webhookDataWithId = {
+          ...generalData,
+          closing_id: closingId
+        };
+        
+        console.log('📤 Enviando webhook com ID de fechamento:', closingId);
+        await sendWebhook(webhookDataWithId);
+      } else {
+        console.warn('⚠️ ID de fechamento não disponível, enviando webhook sem ID');
+        await sendWebhook(generalData);
       }
       
       currentStep++;

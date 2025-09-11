@@ -1,6 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, RefreshCw, ArrowLeft, LogOut, Home, Settings } from 'lucide-react';
@@ -24,8 +22,6 @@ export function ErrorFallback({
   showClearData = false,
   onRetry
 }: ErrorFallbackProps) {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
 
   const handleRetry = () => {
     if (onRetry) {
@@ -35,39 +31,30 @@ export function ErrorFallback({
     }
   };
 
-  const handleBackToLogin = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      navigate('/login');
-    }
+  const handleBackToLogin = () => {
+    // Limpar dados locais
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Recarregar página para ir ao login
+    window.location.href = '/login';
   };
 
-  const handleClearData = async () => {
-    try {
-      // Limpar dados locais
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Fazer logout
-      await signOut();
-      
-      // Navegar para login
-      navigate('/login');
-    } catch (error) {
-      console.error('Erro ao limpar dados:', error);
-      navigate('/login');
-    }
+  const handleClearData = () => {
+    // Limpar dados locais
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Recarregar página para ir ao login
+    window.location.href = '/login';
   };
 
   const handleGoHome = () => {
-    navigate('/');
+    window.location.href = '/';
   };
 
   const handleGoSettings = () => {
-    navigate('/settings');
+    window.location.href = '/settings';
   };
 
   return (
@@ -142,9 +129,6 @@ export function ErrorFallback({
 
           {/* Informações de debug */}
           <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-            {user && (
-              <p className="mb-1">Usuário: {user.email}</p>
-            )}
             <p className="mb-1">Erro: {error}</p>
             <p>Timestamp: {new Date().toLocaleString('pt-BR')}</p>
           </div>

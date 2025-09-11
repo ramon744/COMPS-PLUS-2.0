@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CompProvider } from "@/contexts/CompContext";
 import { RegistryProvider } from "@/contexts/RegistryContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -34,9 +35,10 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RegistryProvider>
-          <CompProvider>
-            <TooltipProvider>
+        <NotificationProvider>
+          <RegistryProvider>
+            <CompProvider>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -72,9 +74,10 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
-            </TooltipProvider>
-          </CompProvider>
-        </RegistryProvider>
+              </TooltipProvider>
+            </CompProvider>
+          </RegistryProvider>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste N8N Webhook - Notificações PDF</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .log { background: #000; color: #0f0; padding: 10px; border-radius: 3px; font-family: monospace; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Teste N8N Webhook - Notificações PDF</h1>
+    
+    <div class="section info">
+        <h3>1. Simular Chamada do N8N para notify_pdf_ready</h3>
+        <p>Este teste simula exatamente o que o N8N deveria fazer após processar o PDF:</p>
+        <button onclick="testN8NCall()">Simular Chamada N8N</button>
+        <div id="n8n-result"></div>
+    </div>
+
+    <div class="section info">
+        <h3>2. Verificar Notificações Criadas</h3>
+        <button onclick="checkNotifications()">Verificar Notificações</button>
+        <div id="notifications-result"></div>
+    </div>
+
+    <div class="section info">
+        <h3>3. Logs de Debug</h3>
+        <div id="debug-log" class="log"></div>
+        <button onclick="clearLog()">Limpar Log</button>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://mywxfyfzonzsnfplyogv.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15d3hmeWZ6b25ac25mcGx5b2d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2NzQ0MDAsImV4cCI6MjA1MTI1MDQwMH0.8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q';
+        
+        function log(message) {
+            const logDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').innerHTML = '';
+        }
+
+        async function testN8NCall() {
+            const resultDiv = document.getElementById('n8n-result');
+            resultDiv.innerHTML = 'Simulando chamada do N8N...';
+            log('🚀 Iniciando simulação de chamada N8N');
+
+            try {
+                // Simular exatamente o que o N8N deveria fazer
+                const closingId = 'edf698c6-c1cc-49ff-9826-03cd6c839c87';
+                const pdfUrl = 'https://exemplo.com/relatorio-n8n-teste.pdf';
+                
+                log(`📤 Enviando para: ${supabaseUrl}/rest/v1/rpc/notify_pdf_ready`);
+                log(`📋 Dados: { p_closing_id: "${closingId}", p_pdf_url: "${pdfUrl}" }`);
+
+                const response = await fetch(`${supabaseUrl}/rest/v1/rpc/notify_pdf_ready`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'apikey': supabaseKey
+                    },
+                    body: JSON.stringify({
+                        p_closing_id: closingId,
+                        p_pdf_url: pdfUrl
+                    })
+                });
+
+                log(`📊 Status da resposta: ${response.status}`);
+                log(`📊 Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Erro na resposta: ${errorText}`);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.text();
+                log(`✅ Resposta recebida: ${result}`);
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Chamada N8N simulada com sucesso!<br>
+                        Status: ${response.status}<br>
+                        Resposta: ${result}
+                    </div>
+                `;
+
+                // Verificar se notificações foram criadas
+                setTimeout(checkNotifications, 1000);
+
+            } catch (error) {
+                log(`❌ Erro: ${error.message}`);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Erro na simulação: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function checkNotifications() {
+            const resultDiv = document.getElementById('notifications-result');
+            resultDiv.innerHTML = 'Verificando notificações...';
+            log('🔍 Verificando notificações criadas');
+
+            try {
+                const response = await fetch(`${supabaseUrl}/rest/v1/notifications?select=*&closing_id=eq.edf698c6-c1cc-49ff-9826-03cd6c839c87&order=created_at.desc&limit=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'apikey': supabaseKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const notifications = await response.json();
+                log(`📋 Encontradas ${notifications.length} notificações`);
+
+                let html = `<div class="success">✅ Encontradas ${notifications.length} notificações</div>`;
+                
+                if (notifications.length > 0) {
+                    html += '<h4>Notificações recentes:</h4><pre>';
+                    notifications.forEach((notif, index) => {
+                        html += `${index + 1}. ID: ${notif.id}\n`;
+                        html += `   Título: ${notif.title}\n`;
+                        html += `   PDF URL: ${notif.pdf_url}\n`;
+                        html += `   Criada em: ${notif.created_at}\n`;
+                        html += `   Lida: ${notif.read ? 'Sim' : 'Não'}\n`;
+                        html += '---\n';
+                    });
+                    html += '</pre>';
+                }
+
+                resultDiv.innerHTML = html;
+
+            } catch (error) {
+                log(`❌ Erro ao verificar notificações: ${error.message}`);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Erro ao verificar notificações: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Inicializar
+        log('🔔 Teste N8N Webhook iniciado');
+        log('📋 URL do Supabase: ' + supabaseUrl);
+        log('🔑 Chave API configurada');
+    </script>
+</body>
+</html>

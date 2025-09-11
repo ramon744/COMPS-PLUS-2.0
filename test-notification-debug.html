@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Notificação - Debug</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Teste de Notificação - Debug Completo</h1>
+    
+    <div class="section info">
+        <h3>1. Verificar Conexão com Supabase</h3>
+        <button onclick="testConnection()">Testar Conexão</button>
+        <div id="connection-result"></div>
+    </div>
+
+    <div class="section info">
+        <h3>2. Verificar Tabela de Notificações</h3>
+        <button onclick="checkTable()">Verificar Tabela</button>
+        <div id="table-result"></div>
+    </div>
+
+    <div class="section info">
+        <h3>3. Testar Função notify_pdf_ready</h3>
+        <button onclick="testNotifyFunction()">Testar Função RPC</button>
+        <div id="function-result"></div>
+    </div>
+
+    <div class="section info">
+        <h3>4. Inserir Notificação Manual</h3>
+        <button onclick="insertManualNotification()">Inserir Notificação</button>
+        <div id="manual-result"></div>
+    </div>
+
+    <div class="section info">
+        <h3>5. Verificar Notificações Existentes</h3>
+        <button onclick="checkExistingNotifications()">Verificar Notificações</button>
+        <div id="existing-result"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://mywxfyfzonzsnfplyogv.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15d3hmeWZ6b25ac25mcGx5b2d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2NzQ0MDAsImV4cCI6MjA1MTI1MDQwMH0.8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            resultDiv.innerHTML = 'Testando conexão...';
+
+            try {
+                const { data, error } = await supabase
+                    .from('closings')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    resultDiv.innerHTML = `<div class="error">❌ Erro na conexão: ${error.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="success">✅ Conexão com Supabase funcionando!</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro geral: ${error.message}</div>`;
+            }
+        }
+
+        async function checkTable() {
+            const resultDiv = document.getElementById('table-result');
+            resultDiv.innerHTML = 'Verificando tabela...';
+
+            try {
+                // Verificar se a tabela existe
+                const { data: tables, error: tablesError } = await supabase
+                    .from('information_schema.tables')
+                    .select('table_name')
+                    .eq('table_schema', 'public')
+                    .eq('table_name', 'notifications');
+
+                if (tablesError) {
+                    resultDiv.innerHTML = `<div class="error">❌ Erro ao verificar tabelas: ${tablesError.message}</div>`;
+                    return;
+                }
+
+                if (tables.length === 0) {
+                    resultDiv.innerHTML = `<div class="error">❌ Tabela notifications não existe!</div>`;
+                    return;
+                }
+
+                // Verificar estrutura da tabela
+                const { data: columns, error: columnsError } = await supabase
+                    .from('information_schema.columns')
+                    .select('column_name, data_type, is_nullable')
+                    .eq('table_schema', 'public')
+                    .eq('table_name', 'notifications')
+                    .order('ordinal_position');
+
+                if (columnsError) {
+                    resultDiv.innerHTML = `<div class="success">✅ Tabela existe, mas erro ao verificar colunas: ${columnsError.message}</div>`;
+                    return;
+                }
+
+                let html = `<div class="success">✅ Tabela notifications existe!</div>`;
+                html += '<h4>Estrutura da tabela:</h4><pre>';
+                columns.forEach(col => {
+                    html += `${col.column_name}: ${col.data_type} (${col.is_nullable === 'YES' ? 'nullable' : 'not null'})\n`;
+                });
+                html += '</pre>';
+
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro geral: ${error.message}</div>`;
+            }
+        }
+
+        async function testNotifyFunction() {
+            const resultDiv = document.getElementById('function-result');
+            resultDiv.innerHTML = 'Testando função notify_pdf_ready...';
+
+            try {
+                // Primeiro, vamos buscar um closing_id válido
+                const { data: closings, error: closingsError } = await supabase
+                    .from('closings')
+                    .select('id')
+                    .limit(1);
+
+                if (closingsError || !closings || closings.length === 0) {
+                    resultDiv.innerHTML = `<div class="error">❌ Nenhum fechamento encontrado. Criando um de teste...</div>`;
+                    
+                    // Criar um fechamento de teste
+                    const { data: newClosing, error: insertError } = await supabase
+                        .from('closings')
+                        .insert({
+                            dia_operacional: '2025-01-30',
+                            periodo_inicio_local: new Date().toISOString(),
+                            periodo_fim_local: new Date().toISOString(),
+                            total_valor_centavos: 10000,
+                            total_qtd: 5,
+                            fechado_por: '4728cc7d-d9c0-4f37-8eff-d3d1b511ca85',
+                            fechado_em_local: new Date().toISOString(),
+                            enviado_para: ['teste@exemplo.com'],
+                            observacao: 'Fechamento de teste para notificações'
+                        })
+                        .select('id')
+                        .single();
+
+                    if (insertError) {
+                        resultDiv.innerHTML = `<div class="error">❌ Erro ao criar fechamento de teste: ${insertError.message}</div>`;
+                        return;
+                    }
+
+                    // Usar o ID do fechamento criado
+                    const testClosingId = newClosing.id;
+                    
+                    // Testar a função
+                    const { data, error } = await supabase
+                        .rpc('notify_pdf_ready', {
+                            p_closing_id: testClosingId,
+                            p_pdf_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+                        });
+
+                    if (error) {
+                        resultDiv.innerHTML = `<div class="error">❌ Erro na função notify_pdf_ready: ${error.message}</div>`;
+                    } else {
+                        resultDiv.innerHTML = `<div class="success">✅ Função notify_pdf_ready executada com sucesso!</div>`;
+                    }
+                } else {
+                    const testClosingId = closings[0].id;
+                    
+                    // Testar a função
+                    const { data, error } = await supabase
+                        .rpc('notify_pdf_ready', {
+                            p_closing_id: testClosingId,
+                            p_pdf_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+                        });
+
+                    if (error) {
+                        resultDiv.innerHTML = `<div class="error">❌ Erro na função notify_pdf_ready: ${error.message}</div>`;
+                    } else {
+                        resultDiv.innerHTML = `<div class="success">✅ Função notify_pdf_ready executada com sucesso!</div>`;
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro geral: ${error.message}</div>`;
+            }
+        }
+
+        async function insertManualNotification() {
+            const resultDiv = document.getElementById('manual-result');
+            resultDiv.innerHTML = 'Inserindo notificação manual...';
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .insert({
+                        user_id: '4728cc7d-d9c0-4f37-8eff-d3d1b511ca85',
+                        closing_id: null,
+                        title: 'PDF do Relatório Disponível (TESTE MANUAL)',
+                        message: 'Teste: O relatório está pronto para visualização.',
+                        type: 'pdf_ready',
+                        pdf_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+                    })
+                    .select();
+
+                if (error) {
+                    resultDiv.innerHTML = `<div class="error">❌ Erro ao inserir notificação: ${error.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="success">✅ Notificação inserida com sucesso! ID: ${data[0].id}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro geral: ${error.message}</div>`;
+            }
+        }
+
+        async function checkExistingNotifications() {
+            const resultDiv = document.getElementById('existing-result');
+            resultDiv.innerHTML = 'Verificando notificações existentes...';
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', '4728cc7d-d9c0-4f37-8eff-d3d1b511ca85')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    resultDiv.innerHTML = `<div class="error">❌ Erro ao buscar notificações: ${error.message}</div>`;
+                } else {
+                    let html = `<div class="success">✅ Encontradas ${data.length} notificações</div>`;
+                    if (data.length > 0) {
+                        html += '<h4>Notificações encontradas:</h4><pre>';
+                        data.forEach(notif => {
+                            html += `ID: ${notif.id}\n`;
+                            html += `Título: ${notif.title}\n`;
+                            html += `Tipo: ${notif.type}\n`;
+                            html += `Lida: ${notif.read ? 'Sim' : 'Não'}\n`;
+                            html += `PDF URL: ${notif.pdf_url || 'N/A'}\n`;
+                            html += `Criada em: ${notif.created_at}\n`;
+                            html += '---\n';
+                        });
+                        html += '</pre>';
+                    }
+                    resultDiv.innerHTML = html;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro geral: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

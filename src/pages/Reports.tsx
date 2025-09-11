@@ -28,6 +28,8 @@ import {
   Line
 } from "recharts";
 import { Download, Calendar, Filter, TrendingUp, DollarSign, Crown, Users, Target } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useReports } from "@/hooks/useReports";
 import { WaiterRankingChart } from "@/components/charts/WaiterRankingChart";
 import { ManagerRankingChart } from "@/components/charts/ManagerRankingChart";
@@ -67,18 +69,18 @@ export default function Reports() {
           end: currentOperationalDay
         };
       case "semanal":
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - 6); // 7 dias incluindo hoje
+        const startWeek = startOfWeek(today, { weekStartsOn: 1 }); // Segunda-feira
+        const endWeek = endOfWeek(today, { weekStartsOn: 1 });
         return {
-          start: weekStart.toISOString().split('T')[0],
-          end: currentOperationalDay
+          start: format(startWeek, 'yyyy-MM-dd'),
+          end: format(endWeek, 'yyyy-MM-dd')
         };
       case "mensal":
-        const monthStart = new Date(today);
-        monthStart.setDate(today.getDate() - 29); // 30 dias incluindo hoje
+        const startMonth = startOfMonth(today);
+        const endMonth = endOfMonth(today);
         return {
-          start: monthStart.toISOString().split('T')[0],
-          end: currentOperationalDay
+          start: format(startMonth, 'yyyy-MM-dd'),
+          end: format(endMonth, 'yyyy-MM-dd')
         };
       default:
         return dateRange; // Mantém as datas atuais para personalizado

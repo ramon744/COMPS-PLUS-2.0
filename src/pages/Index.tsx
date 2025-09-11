@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Calendar, Filter } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Dashboard } from "@/components/Dashboard";
 import { CompForm } from "@/components/CompForm";
@@ -9,13 +9,21 @@ import { useComps } from "@/hooks/useComps";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRegistry } from "@/contexts/RegistryContext";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Comp } from "@/types";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Index = () => {
   const { user } = useAuth();
   const { currentOperationalDay, formatOperationalDayDisplay, getCurrentTurn, getBrazilTimeString } = useOperationalDay();
   const { 
+    comps,
     getTodayComps, 
     addComp, 
     updateComp, 
@@ -30,17 +38,125 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [managerProfiles, setManagerProfiles] = useState<any[]>([]);
   const [todayComps, setTodayComps] = useState<Comp[]>([]);
+  
+  // Estados para filtro de período
+  const [periodFilter, setPeriodFilter] = useState<"diario" | "semanal" | "mensal" | "personalizado">("diario");
+  const [customDateRange, setCustomDateRange] = useState<{from: Date | undefined, to: Date | undefined}>({
+    from: undefined,
+    to: undefined
+  });
+  const [filteredComps, setFilteredComps] = useState<Comp[]>([]);
+
+  // Funções de filtro de período
+  const getDateRange = () => {
+    const today = new Date();
+    
+    switch (periodFilter) {
+      case "diario":
+        return {
+          from: currentOperationalDay,
+          to: currentOperationalDay
+        };
+      case "semanal":
+        const startWeek = startOfWeek(today, { weekStartsOn: 1 }); // Segunda-feira
+        const endWeek = endOfWeek(today, { weekStartsOn: 1 });
+        return {
+          from: format(startWeek, 'yyyy-MM-dd'),
+          to: format(endWeek, 'yyyy-MM-dd')
+        };
+      case "mensal":
+        const startMonth = startOfMonth(today);
+        const endMonth = endOfMonth(today);
+        return {
+          from: format(startMonth, 'yyyy-MM-dd'),
+          to: format(endMonth, 'yyyy-MM-dd')
+        };
+      case "personalizado":
+        return {
+          from: customDateRange.from ? format(customDateRange.from, 'yyyy-MM-dd') : undefined,
+          to: customDateRange.to ? format(customDateRange.to, 'yyyy-MM-dd') : undefined
+        };
+      default:
+        return {
+          from: currentOperationalDay,
+          to: currentOperationalDay
+        };
+    }
+  };
+
+  const filterCompsByPeriod = (comps: Comp[]) => {
+    const { from, to } = getDateRange();
+    
+    console.log('🔍 Filtering comps:', {
+      totalComps: comps.length,
+      periodFilter,
+      from,
+      to,
+      customDateRange
+    });
+    
+    if (!from) return comps;
+    
+    const filtered = comps.filter(comp => {
+      const compDate = comp.diaOperacional;
+      
+      if (to) {
+        return compDate >= from && compDate <= to;
+      } else {
+        return compDate === from;
+      }
+    });
+    
+    console.log('✅ Filtered result:', {
+      filteredCount: filtered.length,
+      sampleComps: filtered.slice(0, 3).map(c => ({
+        id: c.id,
+        diaOperacional: c.diaOperacional,
+        waiterId: c.waiterId
+      }))
+    });
+    
+    return filtered;
+  };
+
+  const getPeriodDisplayText = () => {
+    const { from, to } = getDateRange();
+    
+    switch (periodFilter) {
+      case "diario":
+        return `Dia Operacional: ${formatOperationalDayDisplay(currentOperationalDay)}`;
+      case "semanal":
+        return `Semana: ${format(new Date(from!), 'dd/MM/yyyy', { locale: ptBR })} - ${format(new Date(to!), 'dd/MM/yyyy', { locale: ptBR })}`;
+      case "mensal":
+        return `Mês: ${format(new Date(from!), 'MMMM yyyy', { locale: ptBR })}`;
+      case "personalizado":
+        if (from && to) {
+          return `Período: ${format(new Date(from), 'dd/MM/yyyy', { locale: ptBR })} - ${format(new Date(to), 'dd/MM/yyyy', { locale: ptBR })}`;
+        } else if (from) {
+          return `A partir de: ${format(new Date(from), 'dd/MM/yyyy', { locale: ptBR })}`;
+        }
+        return "Selecione um período";
+      default:
+        return "";
+    }
+  };
 
   // Initialize today's comps when contexts are ready
   useEffect(() => {
     try {
-      const comps = getTodayComps();
-      setTodayComps(comps);
+      const todayComps = getTodayComps();
+      setTodayComps(todayComps);
     } catch (error) {
       console.error('Error getting today comps:', error);
       setTodayComps([]);
     }
   }, [getTodayComps]);
+
+  // Apply period filter when comps or filter changes
+  useEffect(() => {
+    const filtered = filterCompsByPeriod(comps);
+    setFilteredComps(filtered);
+  }, [comps, periodFilter, customDateRange, currentOperationalDay]);
 
   // Update today's comps when data changes in the context
   useEffect(() => {
@@ -56,16 +172,16 @@ const Index = () => {
   useEffect(() => {
     const loadManagerProfiles = async () => {
       try {
-        if (todayComps.length === 0) return;
+        if (filteredComps.length === 0) return;
         
         // Get unique manager IDs from comps
-        const managerIds = [...new Set(todayComps.map(comp => comp.gerenteId))].filter(Boolean);
+        const managerIds = [...new Set(filteredComps.map(comp => comp.gerenteId))].filter(Boolean);
         
         console.log('Loading profiles for manager IDs:', managerIds);
-        console.log('Today comps gerente IDs:', todayComps.map(comp => ({ id: comp.id, gerenteId: comp.gerenteId })));
+        console.log('Filtered comps gerente IDs:', filteredComps.map(comp => ({ id: comp.id, gerenteId: comp.gerenteId })));
 
         if (managerIds.length === 0) {
-          console.log('No manager IDs found in today comps');
+          console.log('No manager IDs found in filtered comps');
           return;
         }
         
@@ -87,7 +203,7 @@ const Index = () => {
     };
 
     loadManagerProfiles();
-  }, [todayComps]);
+  }, [filteredComps]);
 
   // Ensure all contexts are loaded before rendering
   useEffect(() => {
@@ -99,7 +215,7 @@ const Index = () => {
   }, []);
 
   // Filter COMPs based on search term
-  const filteredComps = todayComps.filter(comp => {
+  const searchFilteredComps = filteredComps.filter(comp => {
     if (!searchTerm) return true;
     
     const search = searchTerm.toLowerCase();
@@ -122,7 +238,7 @@ const Index = () => {
   });
 
   // Calculate dashboard stats
-  const dashboardStats = calculateStats(todayComps);
+  const dashboardStats = calculateStats(filteredComps);
 
   const handleNewComp = () => {
     setCurrentView("newComp");
@@ -221,6 +337,74 @@ const Index = () => {
 
       {currentView === "compList" && (
         <div className="space-y-4 animate-fade-in">
+          {/* Period Filter */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Select value={periodFilter} onValueChange={(value: "diario" | "semanal" | "mensal" | "personalizado") => setPeriodFilter(value)}>
+                <SelectTrigger className="w-full">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="diario">Dia Operacional Atual</SelectItem>
+                  <SelectItem value="semanal">Esta Semana</SelectItem>
+                  <SelectItem value="mensal">Este Mês</SelectItem>
+                  <SelectItem value="personalizado">Período Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {periodFilter === "personalizado" && (
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="justify-start text-left font-normal">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {customDateRange.from ? format(customDateRange.from, 'dd/MM/yyyy', { locale: ptBR }) : "Data inicial"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customDateRange.from}
+                      onSelect={(date) => setCustomDateRange(prev => ({ ...prev, from: date }))}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="justify-start text-left font-normal">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {customDateRange.to ? format(customDateRange.to, 'dd/MM/yyyy', { locale: ptBR }) : "Data final"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customDateRange.to}
+                      onSelect={(date) => setCustomDateRange(prev => ({ ...prev, to: date }))}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+          </div>
+
+          {/* Period Display */}
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-sm">
+              {getPeriodDisplayText()}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {searchFilteredComps.length} COMP{searchFilteredComps.length !== 1 ? 's' : ''} encontrado{searchFilteredComps.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -233,12 +417,12 @@ const Index = () => {
             />
           </div>
 
-          {todayComps.length === 0 ? (
+          {filteredComps.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">Nenhum COMP registrado hoje</p>
-              <p className="text-sm text-muted-foreground mt-2">Clique em "Novo COMP" para começar</p>
+              <p className="text-muted-foreground text-lg">Nenhum COMP encontrado no período selecionado</p>
+              <p className="text-sm text-muted-foreground mt-2">Tente ajustar os filtros de período ou pesquisa</p>
             </div>
-          ) : filteredComps.length === 0 ? (
+          ) : searchFilteredComps.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground text-lg">Nenhum COMP encontrado</p>
               <p className="text-sm text-muted-foreground mt-2">Tente ajustar os filtros de pesquisa</p>
@@ -247,7 +431,7 @@ const Index = () => {
             <div className="space-y-4">
               {(() => {
                 // Group filtered COMPs by waiter
-                const waiterGroups = filteredComps.reduce((groups, comp) => {
+                const waiterGroups = searchFilteredComps.reduce((groups, comp) => {
                   const waiterId = comp.waiterId;
                   if (!groups[waiterId]) {
                     groups[waiterId] = [];
@@ -256,7 +440,15 @@ const Index = () => {
                   return groups;
                 }, {} as Record<string, typeof todayComps>);
 
-                return Object.entries(waiterGroups).map(([waiterId, waiterComps]) => {
+                // Sort waiter groups alphabetically by waiter name
+                const sortedWaiterGroups = Object.entries(waiterGroups)
+                  .map(([waiterId, waiterComps]) => {
+                    const waiter = waiters.find(w => w.id === waiterId);
+                    return { waiterId, waiterComps, waiterName: waiter?.nome || 'Sem nome' };
+                  })
+                  .sort((a, b) => a.waiterName.localeCompare(b.waiterName, 'pt-BR'));
+
+                return sortedWaiterGroups.map(({ waiterId, waiterComps }) => {
                   const waiter = waiters.find(w => w.id === waiterId);
                   const isExpanded = expandedWaiters.has(waiterId);
                   const totalValue = waiterComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
@@ -295,7 +487,14 @@ const Index = () => {
                       {/* Expanded COMPs List */}
                       {isExpanded && (
                         <div className="border-t bg-background/50">
-                          {waiterComps.map((comp, index) => {
+                          {waiterComps
+                            .sort((a, b) => {
+                              // Sort by operational day (newest first)
+                              const dateA = new Date(a.diaOperacional);
+                              const dateB = new Date(b.diaOperacional);
+                              return dateB.getTime() - dateA.getTime();
+                            })
+                            .map((comp, index) => {
                             const compType = compTypes.find(t => t.id === comp.compTypeId);
                             const currentManager = managerProfiles.find(m => m.id === comp.gerenteId);
                             
@@ -307,6 +506,9 @@ const Index = () => {
                                     <p className="text-sm text-muted-foreground">{compType?.nome}</p>
                                     <p className="text-xs text-muted-foreground mt-1">
                                       Registrado por: {currentManager?.nome || 'Gerente não encontrado'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Dia Operacional: {format(new Date(comp.diaOperacional), 'dd/MM/yyyy', { locale: ptBR })}
                                     </p>
                                   </div>
                                   <div className="flex flex-row sm:items-center gap-2 justify-between sm:justify-end">

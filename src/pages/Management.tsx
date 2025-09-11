@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Users, FileText, CheckCircle, XCircle, UserCheck } from "lucide-react";
+import { Plus, Edit, Trash2, Users, FileText, CheckCircle, XCircle, UserCheck, Search } from "lucide-react";
 import { CompType, Waiter, Manager } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRegistry } from "@/contexts/RegistryContext";
@@ -65,6 +65,29 @@ export default function Management() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'compType' | 'waiter' | 'manager', name: string} | null>(null);
+  
+  // Estados de pesquisa para cada aba
+  const [searchCompTypes, setSearchCompTypes] = useState("");
+  const [searchWaiters, setSearchWaiters] = useState("");
+  const [searchManagers, setSearchManagers] = useState("");
+
+  // Funções de filtro para cada tipo de dados
+  const filteredCompTypes = compTypes.filter(compType => 
+    compType.codigo.toLowerCase().includes(searchCompTypes.toLowerCase()) ||
+    compType.nome.toLowerCase().includes(searchCompTypes.toLowerCase()) ||
+    compType.descricao.toLowerCase().includes(searchCompTypes.toLowerCase())
+  );
+
+  const filteredWaiters = waiters.filter(waiter => 
+    waiter.nome.toLowerCase().includes(searchWaiters.toLowerCase()) ||
+    (waiter.matricula && waiter.matricula.toLowerCase().includes(searchWaiters.toLowerCase()))
+  );
+
+  const filteredManagers = managers.filter(manager => 
+    manager.nome.toLowerCase().includes(searchManagers.toLowerCase()) ||
+    manager.usuario.toLowerCase().includes(searchManagers.toLowerCase()) ||
+    (manager.ipPermitido && manager.ipPermitido.toLowerCase().includes(searchManagers.toLowerCase()))
+  );
 
   const handleSaveCompType = (compType: Partial<CompType>) => {
     if (editingCompType?.id) {
@@ -299,8 +322,20 @@ export default function Management() {
                   </Dialog>
                 </div>
 
+                {/* Barra de pesquisa para Tipos de COMP */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por código, nome ou descrição..."
+                    value={searchCompTypes}
+                    onChange={(e) => setSearchCompTypes(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
                 <div className="space-y-3">
-                  {compTypes
+                  {filteredCompTypes
                     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                     .map((compType) => (
                     <Card key={compType.id} className="p-4 bg-gradient-card shadow-card">
@@ -388,8 +423,20 @@ export default function Management() {
                   </Dialog>
                 </div>
 
+                {/* Barra de pesquisa para Atendentes */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nome ou matrícula..."
+                    value={searchWaiters}
+                    onChange={(e) => setSearchWaiters(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
                 <div className="space-y-3">
-                  {waiters
+                  {filteredWaiters
                     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                     .map((waiter) => (
                     <Card key={waiter.id} className="p-4 bg-gradient-card shadow-card">
@@ -483,8 +530,20 @@ export default function Management() {
                   </Dialog>
                 </div>
 
+                {/* Barra de pesquisa para Gerentes */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nome, usuário ou IP..."
+                    value={searchManagers}
+                    onChange={(e) => setSearchManagers(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
                 <div className="space-y-3">
-                  {managers
+                  {filteredManagers
                     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                     .map((manager) => (
                     <Card key={manager.id} className="p-4 bg-gradient-card shadow-card">
