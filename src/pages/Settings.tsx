@@ -18,7 +18,7 @@ import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
 import { ManagerFlowSettings } from "@/components/ManagerFlowSettings";
 
 export default function Settings() {
-  const { config, setConfig, saveSettings, isLoading } = useSettings();
+  const { config, setConfig, saveSettings, isLoading, isSaving } = useSettings();
   const { toast } = useToast();
   const { user } = useAuth();
   

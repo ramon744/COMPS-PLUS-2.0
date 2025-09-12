@@ -41,6 +41,7 @@ export function useSettings() {
   const { toast } = useToast();
   const [config, setConfig] = useState<ConfigData>(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Carregar configurações do banco de dados
   const loadSettings = useCallback(async () => {
@@ -145,6 +146,7 @@ export function useSettings() {
     }
 
     try {
+      setIsSaving(true);
       // Separar configurações pessoais das globais
       const { webhookUrl, webhookAtivo, emailsDestino, ...personalConfig } = newConfig;
       
@@ -256,6 +258,8 @@ export function useSettings() {
           variant: "destructive",
         });
       }
+    } finally {
+      setIsSaving(false);
     }
   }, [user, authError, toast]);
 
@@ -317,5 +321,6 @@ export function useSettings() {
     setConfig,
     saveSettings,
     isLoading,
+    isSaving,
   };
 }
