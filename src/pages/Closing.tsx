@@ -42,6 +42,7 @@ import { useOperationalDay } from "@/hooks/useOperationalDay";
 import { useRegistry } from "@/contexts/RegistryContext";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatDateBR } from "@/lib/utils";
 
 export default function Closing() {
   const navigate = useNavigate();
@@ -375,14 +376,14 @@ export default function Closing() {
 
       // Substituir variáveis no texto personalizado
       const textoFinal = textoPersonalizado
-        .replace('{data_operacional}', reportDate)
+        .replace('{data_operacional}', formatDateBR(reportDate))
         .replace('{valor_total}', formatCurrency(closingSummary.totalValue))
         .replace('{gerente_diurno}', morningManager)
         .replace('{gerente_noturno}', nightManager);
 
       const generalData = {
         acao: "dados relatorio",
-        Data_relatorio: reportDate,
+        Data_relatorio: formatDateBR(reportDate),
         Valor_total_de_comps: formatCurrency(closingSummary.totalValue),
         Gerente_diurno: morningManager,
         Gerente_noturno: nightManager,
