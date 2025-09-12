@@ -274,17 +274,6 @@ export default function Settings() {
 
           </Tabs>
 
-          {/* Botão de Salvar Flutuante */}
-          <div className="fixed bottom-6 right-6">
-            <Button 
-              onClick={handleSave}
-              className="h-14 px-6 bg-gradient-primary shadow-float hover:shadow-button transition-all duration-200"
-              size="lg"
-            >
-              <Save className="w-5 h-5 mr-2" />
-              Salvar Configurações
-            </Button>
-          </div>
         </div>
       </Layout>
     </div>
