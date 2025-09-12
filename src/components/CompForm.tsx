@@ -62,6 +62,7 @@ export function CompForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [openWaiterCombobox, setOpenWaiterCombobox] = useState(false);
+  const [formKey, setFormKey] = useState(0); // Chave para forçar re-renderização
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -107,6 +108,7 @@ export function CompForm({
         motivo: "",
       });
       setErrors({});
+      setFormKey(prev => prev + 1); // Forçar re-renderização limpa
       
       // Focus no campo correto baseado nas configurações individuais
       // Usar requestAnimationFrame para evitar conflitos de DOM
@@ -133,14 +135,21 @@ export function CompForm({
   };
 
   const updateFormData = (field: keyof CompFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log(`🔄 Atualizando campo ${field}:`, value);
+    setFormData(prev => {
+      if (prev[field] === value) {
+        console.log(`⚠️ Valor já é o mesmo para ${field}, ignorando atualização`);
+        return prev;
+      }
+      return { ...prev, [field]: value };
+    });
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div key={formKey} className="space-y-4 sm:space-y-6 animate-fade-in">
       <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
         <div className="space-y-4 sm:space-y-6">
           {/* Atendente */}
@@ -225,8 +234,12 @@ export function CompForm({
               Tipo de COMP <span className="text-destructive">*</span>
             </Label>
             <Select
+              key={`compType-${formKey}`}
               value={formData.compTypeId}
-              onValueChange={(value) => updateFormData("compTypeId", value)}
+              onValueChange={(value) => {
+                console.log('🔄 Selecionando tipo de COMP:', value);
+                updateFormData("compTypeId", value);
+              }}
             >
               <SelectTrigger className={cn(
                 "h-10 sm:h-11 text-sm sm:text-base",
