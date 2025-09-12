@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Mail, Settings2, FileText, Send, History, Trash2 } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { ReportHistory } from "@/components/ReportHistory";
 import { CleanupStatus } from "@/components/CleanupStatus";
 import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
@@ -17,8 +18,12 @@ import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading } = useSettings();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [emailInput, setEmailInput] = useState("");
+
+  // Verificar se o usuário é ADM
+  const isAdmin = user?.email === 'ramonflora2@gmail.com';
 
   const handleSave = async () => {
     await saveSettings(config);
@@ -59,16 +64,28 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <Layout title="Configurações">
         <div className="space-y-6 animate-fade-in">
-          <Tabs defaultValue="geral" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="geral">
-                <Settings2 className="w-4 h-4 mr-2" />
-                Geral
-              </TabsTrigger>
-              <TabsTrigger value="email">
-                <Mail className="w-4 h-4 mr-2" />
-                E-mail
-              </TabsTrigger>
+          <Tabs defaultValue={isAdmin ? "geral" : "email-individual"} className="space-y-6">
+            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-3'}`}>
+              {isAdmin && (
+                <>
+                  <TabsTrigger value="geral">
+                    <Settings2 className="w-4 h-4 mr-2" />
+                    Geral
+                  </TabsTrigger>
+                  <TabsTrigger value="email">
+                    <Mail className="w-4 h-4 mr-2" />
+                    E-mail
+                  </TabsTrigger>
+                  <TabsTrigger value="webhook">
+                    <Send className="w-4 h-4 mr-2" />
+                    Webhook
+                  </TabsTrigger>
+                  <TabsTrigger value="limpeza">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Limpeza
+                  </TabsTrigger>
+                </>
+              )}
               <TabsTrigger value="email-individual">
                 <Mail className="w-4 h-4 mr-2" />
                 Meu E-mail
@@ -77,23 +94,16 @@ export default function Settings() {
                 <FileText className="w-4 h-4 mr-2" />
                 Fluxo
               </TabsTrigger>
-              <TabsTrigger value="webhook">
-                <Send className="w-4 h-4 mr-2" />
-                Webhook
-              </TabsTrigger>
               <TabsTrigger value="historico">
                 <History className="w-4 h-4 mr-2" />
                 Histórico
               </TabsTrigger>
-              <TabsTrigger value="limpeza">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Limpeza
-              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="geral">
-              <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Configurações Gerais</h3>
+            {isAdmin && (
+              <TabsContent value="geral">
+                <Card className="p-6 bg-gradient-card shadow-card">
+                  <h3 className="text-lg font-semibold mb-4">Configurações Gerais</h3>
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label>Hora de Corte do Dia Operacional</Label>
@@ -138,12 +148,14 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-              </Card>
-            </TabsContent>
+                </Card>
+              </TabsContent>
+            )}
 
-            <TabsContent value="email">
-              <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Configurações Globais de E-mail</h3>
+            {isAdmin && (
+              <TabsContent value="email">
+                <Card className="p-6 bg-gradient-card shadow-card">
+                  <h3 className="text-lg font-semibold mb-4">Configurações Globais de E-mail</h3>
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <Label>E-mails de Destino</Label>
@@ -186,8 +198,9 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-              </Card>
-            </TabsContent>
+                </Card>
+              </TabsContent>
+            )}
 
             <TabsContent value="email-individual">
               <ManagerEmailSettings />
@@ -253,9 +266,10 @@ export default function Settings() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="webhook">
-              <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Configurações de Webhook</h3>
+            {isAdmin && (
+              <TabsContent value="webhook">
+                <Card className="p-6 bg-gradient-card shadow-card">
+                  <h3 className="text-lg font-semibold mb-4">Configurações de Webhook</h3>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -299,16 +313,19 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
-              </Card>
-            </TabsContent>
+                </Card>
+              </TabsContent>
+            )}
 
             <TabsContent value="historico">
               <ReportHistory />
             </TabsContent>
 
-            <TabsContent value="limpeza">
-              <CleanupStatus />
-            </TabsContent>
+            {isAdmin && (
+              <TabsContent value="limpeza">
+                <CleanupStatus />
+              </TabsContent>
+            )}
 
           </Tabs>
 
