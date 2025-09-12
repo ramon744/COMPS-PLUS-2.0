@@ -99,7 +99,7 @@ export default function Closing() {
         toast({
           title: "Pode enviar agora!",
           description: "O tempo de espera de 30 minutos foi concluído.",
-          duration: 5000,
+          duration: 2000,
         });
         // Fechar o modal automaticamente quando o tempo expirar
         setShowDuplicateWarning(false);
@@ -193,7 +193,7 @@ export default function Closing() {
           title: "Aguarde para enviar novamente",
           description: `Relatórios só podem ser enviados a cada 30 minutos. Próximo envio permitido às ${nextTimeFormatted}.`,
           variant: "destructive",
-          duration: 8000,
+          duration: 3000,
         });
         
         // Mostrar modal com informações detalhadas
@@ -227,6 +227,7 @@ export default function Closing() {
         title: "Erro",
         description: "Por favor, preencha os nomes dos gerentes.",
         variant: "destructive",
+        duration: 2000,
       });
       return;
     }
@@ -461,6 +462,7 @@ export default function Closing() {
       toast({
         title: "Dia fechado com sucesso!",
         description: "Todos os dados foram enviados para o webhook configurado.",
+        duration: 2000,
       });
       
       // Fechar o diálogo imediatamente
@@ -477,6 +479,7 @@ export default function Closing() {
         title: "Erro no fechamento",
         description: "Ocorreu um erro durante o processo de fechamento.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsClosing(false);

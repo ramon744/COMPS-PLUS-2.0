@@ -90,6 +90,7 @@ export function CompForm({
         title: "Erro de validação",
         description: "Por favor, corrija os campos obrigatórios.",
         variant: "destructive",
+        duration: 1500, // 1.5 segundos
       });
       return;
     }
@@ -130,6 +131,7 @@ export function CompForm({
       toast({
         title: "COMP salvo com sucesso!",
         description: "Pronto para o próximo lançamento.",
+        duration: 2000, // 2 segundos
       });
     }
   };
