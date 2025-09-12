@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Mail, Settings2, FileText, Send, History, Trash2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Save, Mail, Settings2, FileText, Send, History, Trash2, Loader2 } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -197,6 +198,39 @@ export default function Settings() {
                     <p className="text-sm text-muted-foreground">
                       E-mails que receberão o relatório de fechamento diário (configuração global)
                     </p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>Configurações globais para todos os gerentes</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => window.location.reload()}
+                        disabled={isSaving}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Salvar
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 </Card>
