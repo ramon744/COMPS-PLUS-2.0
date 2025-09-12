@@ -17,11 +17,6 @@ export function ManagerFlowSettings() {
     ativo: true
   });
 
-  // Log do estado atual do formData
-  useEffect(() => {
-    console.log('📊 Estado atual do formData:', formData);
-  }, [formData]);
-
   // Atualizar formData quando settings carregar
   useEffect(() => {
     if (settings) {
@@ -33,11 +28,18 @@ export function ManagerFlowSettings() {
         ativo: settings.ativo
       };
       console.log('🔄 Novo formData:', newFormData);
+      console.log('🔄 Chamando setFormData com:', newFormData);
       setFormData(newFormData);
+      console.log('✅ setFormData chamado');
     } else {
       console.log('⚠️ Nenhuma configuração encontrada, usando padrões');
     }
   }, [settings]);
+
+  // Log do estado atual do formData
+  useEffect(() => {
+    console.log('📊 Estado atual do formData:', formData);
+  }, [formData]);
 
   const handleSave = async () => {
     console.log('💾 Estado atual do formData antes de salvar:', formData);
