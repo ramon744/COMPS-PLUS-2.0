@@ -59,6 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
 
       console.log('🔔 Notificações carregadas:', data?.length || 0);
+      console.log('🔔 Dados das notificações:', data);
       setNotifications(data || []);
     } catch (error) {
       console.error('❌ Erro ao carregar notificações:', error);

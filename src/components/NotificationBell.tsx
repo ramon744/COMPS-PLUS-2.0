@@ -23,6 +23,11 @@ import { ptBR } from 'date-fns/locale';
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading, isRealtimeConnected } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Debug logs
+  console.log('🔔 NotificationBell - notifications:', notifications);
+  console.log('🔔 NotificationBell - unreadCount:', unreadCount);
+  console.log('🔔 NotificationBell - isLoading:', isLoading);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
 

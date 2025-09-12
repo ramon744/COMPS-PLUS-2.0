@@ -377,7 +377,8 @@ export default function Closing() {
         .replace('{data_operacional}', formatDateBR(reportDate))
         .replace('{valor_total}', formatCurrency(closingSummary.totalValue))
         .replace('{gerente_diurno}', morningManager)
-        .replace('{gerente_noturno}', nightManager);
+        .replace('{gerente_noturno}', nightManager)
+        .replace(/\n/g, '<br>'); // Converter quebras de linha para HTML
 
       const generalData = {
         acao: "dados relatorio",
