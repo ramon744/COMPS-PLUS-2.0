@@ -21,7 +21,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { MoneyInput } from "./MoneyInput";
-import { Save, SaveAll, Check, ChevronsUpDown } from "lucide-react";
+import { SaveAll, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
 import { useManagerFlowSettings } from "@/hooks/useManagerFlowSettings";
@@ -298,10 +298,10 @@ export function CompForm({
       </Card>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <Button
           onClick={() => handleSubmit(true)}
-          className="h-10 sm:h-12 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 text-sm sm:text-base"
+          className="flex-1 h-10 sm:h-12 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 text-sm sm:text-base"
           size="lg"
         >
           <SaveAll className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -309,23 +309,14 @@ export function CompForm({
         </Button>
         
         <Button
-          onClick={() => handleSubmit(false)}
-          variant="secondary"
-          className="h-10 sm:h-12 shadow-card hover:shadow-button transition-all duration-200 text-sm sm:text-base"
+          onClick={onCancel}
+          variant="outline"
+          className="flex-1 h-10 sm:h-12 text-sm sm:text-base"
           size="lg"
         >
-          <Save className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-          Salvar & Fechar
+          Cancelar
         </Button>
       </div>
-
-      <Button
-        onClick={onCancel}
-        variant="outline"
-        className="w-full h-10 sm:h-11 text-sm sm:text-base"
-      >
-        Cancelar
-      </Button>
     </div>
   );
 }
