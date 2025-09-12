@@ -19,6 +19,7 @@ export function useManagerFlowSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Forçar recarregamento
 
   // Carregar configurações do gerente logado
   const loadSettings = useCallback(async () => {
@@ -100,8 +101,9 @@ export function useManagerFlowSettings() {
         if (insertError) throw insertError;
       }
 
-      // Recarregar configurações após salvar
-      console.log('🔄 Recarregando configurações após salvamento...');
+      // Forçar recarregamento das configurações
+      console.log('🔄 Forçando recarregamento das configurações...');
+      setRefreshKey(prev => prev + 1);
       await loadSettings();
       console.log('✅ Configurações recarregadas após salvamento');
       return true;
@@ -114,13 +116,13 @@ export function useManagerFlowSettings() {
     }
   }, [user?.id, settings?.id]); // Remover loadSettings da dependência
 
-  // Carregar configurações quando o usuário estiver autenticado
+  // Carregar configurações quando o usuário estiver autenticado ou refreshKey mudar
   useEffect(() => {
     if (user?.id) {
-      console.log('🔄 Hook: Carregando configurações para usuário:', user.id);
+      console.log('🔄 Hook: Carregando configurações para usuário:', user.id, 'refreshKey:', refreshKey);
       loadSettings();
     }
-  }, [user?.id]); // Remover loadSettings da dependência para evitar loops
+  }, [user?.id, refreshKey]); // Incluir refreshKey para forçar recarregamento
 
   // Forçar recarregamento quando settings mudarem
   useEffect(() => {
