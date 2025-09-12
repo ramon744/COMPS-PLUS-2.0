@@ -110,14 +110,14 @@ export function useManagerFlowSettings() {
     } finally {
       setIsSaving(false);
     }
-  }, [user?.id, settings?.id, loadSettings]);
+  }, [user?.id, settings?.id]); // Remover loadSettings da dependência
 
   // Carregar configurações quando o usuário estiver autenticado
   useEffect(() => {
     if (user?.id) {
       loadSettings();
     }
-  }, [user?.id, loadSettings]);
+  }, [user?.id]); // Remover loadSettings da dependência para evitar loops
 
   return {
     settings,
