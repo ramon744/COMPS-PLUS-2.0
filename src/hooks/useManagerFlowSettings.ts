@@ -39,9 +39,11 @@ export function useManagerFlowSettings() {
         .maybeSingle();
 
       if (fetchError) {
+        console.error('❌ Erro ao carregar configurações:', fetchError);
         throw fetchError;
       }
 
+      console.log('📥 Configurações carregadas:', data);
       setSettings(data);
     } catch (err) {
       console.error('Erro ao carregar configurações de fluxo:', err);
@@ -64,6 +66,8 @@ export function useManagerFlowSettings() {
 
       // Se já existe configuração, atualizar
       if (settings?.id) {
+        console.log('🔄 Atualizando configurações existentes:', { settingsId: settings.id, newSettings });
+        
         const { error: updateError } = await supabase
           .from('manager_flow_settings')
           .update({
@@ -73,7 +77,12 @@ export function useManagerFlowSettings() {
           })
           .eq('id', settings.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('❌ Erro ao atualizar configurações:', updateError);
+          throw updateError;
+        }
+        
+        console.log('✅ Configurações atualizadas com sucesso');
       } else {
         // Se não existe, criar nova
         const { error: insertError } = await supabase

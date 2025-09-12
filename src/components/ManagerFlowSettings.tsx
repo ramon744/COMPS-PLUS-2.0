@@ -20,6 +20,7 @@ export function ManagerFlowSettings() {
   // Atualizar formData quando settings carregar
   useEffect(() => {
     if (settings) {
+      console.log('🔄 Aplicando configurações no formulário:', settings);
       setFormData({
         manter_tipo_selecionado: settings.manter_tipo_selecionado,
         manter_waiter_selecionado: settings.manter_waiter_selecionado,
@@ -30,10 +31,13 @@ export function ManagerFlowSettings() {
   }, [settings]);
 
   const handleSave = async () => {
+    console.log('💾 Salvando configurações:', formData);
     const success = await saveSettings(formData);
     if (success) {
+      console.log('✅ Configurações salvas com sucesso');
       toast.success('Configurações de fluxo salvas com sucesso!');
     } else {
+      console.log('❌ Erro ao salvar configurações');
       toast.error('Erro ao salvar configurações de fluxo');
     }
   };
