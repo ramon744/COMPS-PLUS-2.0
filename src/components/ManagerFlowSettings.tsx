@@ -21,16 +21,21 @@ export function ManagerFlowSettings() {
   useEffect(() => {
     if (settings) {
       console.log('🔄 Aplicando configurações no formulário:', settings);
-      setFormData({
+      const newFormData = {
         manter_tipo_selecionado: settings.manter_tipo_selecionado,
         manter_waiter_selecionado: settings.manter_waiter_selecionado,
         foco_apos_salvar: settings.foco_apos_salvar,
         ativo: settings.ativo
-      });
+      };
+      console.log('🔄 Novo formData:', newFormData);
+      setFormData(newFormData);
+    } else {
+      console.log('⚠️ Nenhuma configuração encontrada, usando padrões');
     }
   }, [settings]);
 
   const handleSave = async () => {
+    console.log('💾 Estado atual do formData antes de salvar:', formData);
     console.log('💾 Salvando configurações:', formData);
     const success = await saveSettings(formData);
     if (success) {

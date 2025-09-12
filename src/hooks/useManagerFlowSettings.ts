@@ -100,8 +100,10 @@ export function useManagerFlowSettings() {
         if (insertError) throw insertError;
       }
 
-      // Recarregar configurações
+      // Recarregar configurações após salvar
+      console.log('🔄 Recarregando configurações após salvamento...');
       await loadSettings();
+      console.log('✅ Configurações recarregadas após salvamento');
       return true;
     } catch (err) {
       console.error('Erro ao salvar configurações de fluxo:', err);
@@ -115,9 +117,15 @@ export function useManagerFlowSettings() {
   // Carregar configurações quando o usuário estiver autenticado
   useEffect(() => {
     if (user?.id) {
+      console.log('🔄 Hook: Carregando configurações para usuário:', user.id);
       loadSettings();
     }
   }, [user?.id]); // Remover loadSettings da dependência para evitar loops
+
+  // Forçar recarregamento quando settings mudarem
+  useEffect(() => {
+    console.log('🔄 Hook: Settings mudaram:', settings);
+  }, [settings]);
 
   return {
     settings,
