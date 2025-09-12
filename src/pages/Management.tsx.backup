@@ -394,6 +394,7 @@ export default function Management() {
                 </div>
               </div>
               </TabsContent>
+            )}
 
             <TabsContent value="waiters">
               <div className="space-y-4">
@@ -614,7 +615,6 @@ export default function Management() {
                 </div>
               </div>
             </TabsContent>
-            )}
           </Tabs>
         </div>
         

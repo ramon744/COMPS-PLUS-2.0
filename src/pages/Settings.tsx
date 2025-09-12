@@ -8,24 +8,46 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Save, Mail, Settings2, FileText, Send, History, Trash2, Loader2 } from "lucide-react";
+import { Save, Mail, Settings2, FileText, Send, History, Trash2, Loader2, Shield, User, RefreshCw } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions, usePermissionManagement } from "@/hooks/usePermissions";
 import { ReportHistory } from "@/components/ReportHistory";
 import { CleanupStatus } from "@/components/CleanupStatus";
 import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
 import { ManagerFlowSettings } from "@/components/ManagerFlowSettings";
+import { PermissionManager } from "@/components/PermissionManager";
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading, isSaving } = useSettings();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { hasPermission, loadPermissions: reloadUserPermissions } = usePermissions();
+  const { loadAllData: loadPermissions, testUserPermission } = usePermissionManagement();
   
-  const [emailInput, setEmailInput] = useState("");
-
   // Verificar se o usuário é ADM
   const isAdmin = user?.email === 'ramonflora2@gmail.com';
+  
+  console.log('🔍 Settings - Funções recebidas:', {
+    hasPermission: typeof hasPermission,
+    loadPermissions: typeof loadPermissions,
+    testUserPermission: typeof testUserPermission
+  });
+  
+  // Debug das permissões
+  console.log('🔍 Settings - Testando permissões:', {
+    isAdmin,
+    user: user?.email,
+    'access_settings_geral': hasPermission('access_settings_geral'),
+    'access_settings_email': hasPermission('access_settings_email'),
+    'access_settings_webhook': hasPermission('access_settings_webhook'),
+    'access_settings_limpeza': hasPermission('access_settings_limpeza'),
+    'access_settings_permissoes': hasPermission('access_settings_permissoes'),
+    'access_cadastros': hasPermission('access_cadastros')
+  });
+  
+  const [emailInput, setEmailInput] = useState("");
 
   const handleSave = async () => {
     await saveSettings(config);
@@ -67,45 +89,80 @@ export default function Settings() {
       <Layout title="Configurações">
         <div className="space-y-6 animate-fade-in">
           <Tabs defaultValue={isAdmin ? "geral" : "email-individual"} className="space-y-6">
-            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-3'}`}>
-              {isAdmin && (
-                <>
-                  <TabsTrigger value="geral">
-                    <Settings2 className="w-4 h-4 mr-2" />
-                    Geral
+            {/* Barra de Abas Horizontal - Apenas Ícones */}
+            <div className="space-y-2">
+              <TabsList className="flex w-full justify-start gap-1 h-12 p-1 overflow-x-auto">
+                {/* Abas Administrativas - Baseadas em Permissões */}
+                {(isAdmin || hasPermission('access_settings_geral')) && (
+                  <TabsTrigger value="geral" className="flex items-center justify-center w-12 h-10 p-0" title="Geral">
+                    <Settings2 className="w-5 h-5" />
                   </TabsTrigger>
-                  <TabsTrigger value="email">
-                    <Mail className="w-4 h-4 mr-2" />
-                    E-mail
+                )}
+                {(isAdmin || hasPermission('access_settings_email')) && (
+                  <TabsTrigger value="email" className="flex items-center justify-center w-12 h-10 p-0" title="E-mail Global">
+                    <Mail className="w-5 h-5" />
                   </TabsTrigger>
-                  <TabsTrigger value="webhook">
-                    <Send className="w-4 h-4 mr-2" />
-                    Webhook
+                )}
+                {(isAdmin || hasPermission('access_settings_webhook')) && (
+                  <TabsTrigger value="webhook" className="flex items-center justify-center w-12 h-10 p-0" title="Webhook">
+                    <Send className="w-5 h-5" />
                   </TabsTrigger>
-                  <TabsTrigger value="limpeza">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Limpeza
+                )}
+                {(isAdmin || hasPermission('access_settings_limpeza')) && (
+                  <TabsTrigger value="limpeza" className="flex items-center justify-center w-12 h-10 p-0" title="Limpeza">
+                    <Trash2 className="w-5 h-5" />
                   </TabsTrigger>
-                </>
-              )}
-              <TabsTrigger value="email-individual">
-                <Mail className="w-4 h-4 mr-2" />
-                Meu E-mail
-              </TabsTrigger>
-              <TabsTrigger value="fluxo">
-                <FileText className="w-4 h-4 mr-2" />
-                Fluxo
-              </TabsTrigger>
-              <TabsTrigger value="historico">
-                <History className="w-4 h-4 mr-2" />
-                Histórico
-              </TabsTrigger>
-            </TabsList>
+                )}
+                {(isAdmin || hasPermission('access_settings_permissoes')) && (
+                  <TabsTrigger value="permissoes" className="flex items-center justify-center w-12 h-10 p-0" title="Permissões">
+                    <Shield className="w-5 h-5" />
+                  </TabsTrigger>
+                )}
+                
+                {/* Abas Pessoais */}
+                <TabsTrigger value="email-individual" className="flex items-center justify-center w-12 h-10 p-0" title="Meu E-mail">
+                  <Mail className="w-5 h-5" />
+                </TabsTrigger>
+                <TabsTrigger value="fluxo" className="flex items-center justify-center w-12 h-10 p-0" title="Fluxo">
+                  <FileText className="w-5 h-5" />
+                </TabsTrigger>
+                <TabsTrigger value="historico" className="flex items-center justify-center w-12 h-10 p-0" title="Histórico">
+                  <History className="w-5 h-5" />
+                </TabsTrigger>
+              </TabsList>
+              
+              {/* Indicador de Seção Ativa */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>
+                    {isAdmin ? "Configurações Administrativas e Pessoais" : "Configurações Pessoais"}
+                  </span>
+                </div>
+                {!isAdmin && (
+                  <Button 
+                    onClick={async () => {
+                      await reloadUserPermissions(true);
+                      toast({
+                        title: "Permissões Recarregadas",
+                        description: "Suas permissões foram atualizadas. Verifique se as abas apareceram.",
+                      });
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-6 px-2"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Recarregar
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {isAdmin && (
-              <TabsContent value="geral">
-                <Card className="p-6 bg-gradient-card shadow-card">
-                  <h3 className="text-lg font-semibold mb-4">Configurações Gerais</h3>
+            <TabsContent value="geral">
+              <Card className="p-6 bg-gradient-card shadow-card">
+                <h3 className="text-lg font-semibold mb-4">Configurações Gerais</h3>
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label>Hora de Corte do Dia Operacional</Label>
@@ -150,13 +207,13 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-                </Card>
-              </TabsContent>
+              </Card>
+            </TabsContent>
             )}
 
             {isAdmin && (
-              <TabsContent value="email">
-                <Card className="p-6 bg-gradient-card shadow-card">
+            <TabsContent value="email">
+              <Card className="p-6 bg-gradient-card shadow-card">
                   <h3 className="text-lg font-semibold mb-4">Configurações Globais de E-mail</h3>
                 <div className="space-y-6">
                   <div className="space-y-4">
@@ -233,7 +290,7 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
-                </Card>
+              </Card>
               </TabsContent>
             )}
 
@@ -246,9 +303,9 @@ export default function Settings() {
             </TabsContent>
 
             {isAdmin && (
-              <TabsContent value="webhook">
-                <Card className="p-6 bg-gradient-card shadow-card">
-                  <h3 className="text-lg font-semibold mb-4">Configurações de Webhook</h3>
+            <TabsContent value="webhook">
+              <Card className="p-6 bg-gradient-card shadow-card">
+                <h3 className="text-lg font-semibold mb-4">Configurações de Webhook</h3>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -292,8 +349,8 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
-                </Card>
-              </TabsContent>
+              </Card>
+            </TabsContent>
             )}
 
             <TabsContent value="historico">
@@ -303,6 +360,65 @@ export default function Settings() {
             {isAdmin && (
               <TabsContent value="limpeza">
                 <CleanupStatus />
+              </TabsContent>
+            )}
+
+            {/* Aba de Permissões - Apenas ADM */}
+            {isAdmin && (
+              <TabsContent value="permissoes">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-semibold">Gerenciar Permissões</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Controle o acesso dos gerentes às diferentes seções do sistema
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={loadPermissions}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Recarregar
+                      </Button>
+                      <Button 
+                        onClick={async () => {
+                          const quersonId = '09917606-2f2b-4a70-be82-66352ce65138';
+                          console.log('🧪 Testando permissões do Querson Rocha (ID:', quersonId, ')');
+                          
+                          const hasGeral = await testUserPermission(quersonId, 'access_settings_geral');
+                          const hasEmail = await testUserPermission(quersonId, 'access_settings_email');
+                          const hasCadastros = await testUserPermission(quersonId, 'access_cadastros');
+                          const hasWebhook = await testUserPermission(quersonId, 'access_settings_webhook');
+                          const hasLimpeza = await testUserPermission(quersonId, 'access_settings_limpeza');
+                          const hasPermissoes = await testUserPermission(quersonId, 'access_settings_permissoes');
+                          
+                          console.log('🧪 Teste Querson Rocha - Resultados:', {
+                            geral: hasGeral,
+                            email: hasEmail,
+                            cadastros: hasCadastros,
+                            webhook: hasWebhook,
+                            limpeza: hasLimpeza,
+                            permissoes: hasPermissoes
+                          });
+                          
+                          toast({
+                            title: "Teste de Permissões - Querson Rocha",
+                            description: `Geral: ${hasGeral ? 'SIM' : 'NÃO'}, Email: ${hasEmail ? 'SIM' : 'NÃO'}, Cadastros: ${hasCadastros ? 'SIM' : 'NÃO'}, Webhook: ${hasWebhook ? 'SIM' : 'NÃO'}, Limpeza: ${hasLimpeza ? 'SIM' : 'NÃO'}, Permissões: ${hasPermissoes ? 'SIM' : 'NÃO'}`,
+                          });
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Testar Querson
+                      </Button>
+                    </div>
+                  </div>
+                  <PermissionManager />
+                </div>
               </TabsContent>
             )}
 
