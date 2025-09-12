@@ -64,7 +64,7 @@ export function useSettings() {
         .select('config_value')
         .eq('user_id', user.id)
         .eq('config_key', 'app_settings')
-        .single();
+        .maybeSingle(); // Usar maybeSingle em vez de single para evitar erro 406
 
       // Carregar configurações globais (webhook e emails)
       let globalSettings = null;
@@ -88,8 +88,11 @@ export function useSettings() {
       // Aplicar configurações pessoais se existirem
       if (userSettings && !userError) {
         finalConfig = { ...finalConfig, ...(userSettings.config_value as ConfigData) };
-      } else if (userError && userError.code !== 'PGRST116') {
-        console.error('Erro ao carregar configurações pessoais:', userError);
+        console.log('✅ Configurações pessoais carregadas para usuário:', user.id);
+      } else if (userError) {
+        console.warn('⚠️ Nenhuma configuração pessoal encontrada para usuário:', user.id, userError);
+      } else {
+        console.log('ℹ️ Usando configurações padrão para usuário:', user.id);
       }
 
       // Aplicar configurações globais se existirem (sobrescrever webhook e emails)
