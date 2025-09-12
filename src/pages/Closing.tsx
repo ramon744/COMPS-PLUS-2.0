@@ -351,6 +351,35 @@ export default function Closing() {
         emailFields[`email_destino${i}`] = emailsDestino[i - 1] || "";
       }
       
+      // Buscar texto personalizado do gerente logado
+      let textoPersonalizado = config?.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional.";
+      let assinaturaPersonalizada = "";
+      
+      if (user?.id) {
+        try {
+          const { data: emailSettings } = await supabase
+            .from('manager_email_settings')
+            .select('texto_padrao, assinatura')
+            .eq('manager_id', user.id)
+            .eq('ativo', true)
+            .single();
+          
+          if (emailSettings) {
+            textoPersonalizado = emailSettings.texto_padrao || textoPersonalizado;
+            assinaturaPersonalizada = emailSettings.assinatura || "";
+          }
+        } catch (error) {
+          console.log('Usando texto padrão global:', error);
+        }
+      }
+
+      // Substituir variáveis no texto personalizado
+      const textoFinal = textoPersonalizado
+        .replace('{data_operacional}', reportDate)
+        .replace('{valor_total}', formatCurrency(closingSummary.totalValue))
+        .replace('{gerente_diurno}', morningManager)
+        .replace('{gerente_noturno}', nightManager);
+
       const generalData = {
         acao: "dados relatorio",
         Data_relatorio: reportDate,
@@ -359,7 +388,8 @@ export default function Closing() {
         Gerente_noturno: nightManager,
         ...compTypePercentages,
         ...emailFields,
-        Texto_padrao_email: config?.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional."
+        Texto_padrao_email: textoFinal,
+        Assinatura_email: assinaturaPersonalizada
       };
 
       // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK

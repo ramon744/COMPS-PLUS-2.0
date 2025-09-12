@@ -12,6 +12,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import { ReportHistory } from "@/components/ReportHistory";
 import { CleanupStatus } from "@/components/CleanupStatus";
+import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading } = useSettings();
@@ -59,7 +60,7 @@ export default function Settings() {
       <Layout title="Configurações">
         <div className="space-y-6 animate-fade-in">
           <Tabs defaultValue="geral" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="geral">
                 <Settings2 className="w-4 h-4 mr-2" />
                 Geral
@@ -67,6 +68,10 @@ export default function Settings() {
               <TabsTrigger value="email">
                 <Mail className="w-4 h-4 mr-2" />
                 E-mail
+              </TabsTrigger>
+              <TabsTrigger value="email-individual">
+                <Mail className="w-4 h-4 mr-2" />
+                Meu E-mail
               </TabsTrigger>
               <TabsTrigger value="fluxo">
                 <FileText className="w-4 h-4 mr-2" />
@@ -138,21 +143,8 @@ export default function Settings() {
 
             <TabsContent value="email">
               <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Configurações de E-mail</h3>
+                <h3 className="text-lg font-semibold mb-4">Configurações Globais de E-mail</h3>
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Texto Padrão do E-mail</Label>
-                    <Textarea
-                      value={config.textoEmailPadrao}
-                      onChange={(e) => setConfig(prev => ({ ...prev, textoEmailPadrao: e.target.value }))}
-                      placeholder="Digite o texto que aparecerá no corpo do e-mail..."
-                      rows={4}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Texto que será incluído no corpo do e-mail enviado com o relatório
-                    </p>
-                  </div>
-
                   <div className="space-y-4">
                     <Label>E-mails de Destino</Label>
                     <div className="flex gap-2">
@@ -190,11 +182,15 @@ export default function Settings() {
                     </div>
                     
                     <p className="text-sm text-muted-foreground">
-                      E-mails que receberão o relatório de fechamento diário
+                      E-mails que receberão o relatório de fechamento diário (configuração global)
                     </p>
                   </div>
                 </div>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="email-individual">
+              <ManagerEmailSettings />
             </TabsContent>
 
             <TabsContent value="fluxo">
