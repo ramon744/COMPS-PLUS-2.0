@@ -301,7 +301,7 @@ export function CompForm({
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <Button
           onClick={() => handleSubmit(true)}
-          className="flex-1 h-10 sm:h-12 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 text-sm sm:text-base"
+          className="h-10 sm:h-12 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 text-sm sm:text-base sm:flex-1"
           size="lg"
         >
           <SaveAll className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -311,7 +311,7 @@ export function CompForm({
         <Button
           onClick={onCancel}
           variant="outline"
-          className="flex-1 h-10 sm:h-12 text-sm sm:text-base"
+          className="h-10 sm:h-12 text-sm sm:text-base sm:w-32"
           size="lg"
         >
           Cancelar
