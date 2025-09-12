@@ -58,7 +58,11 @@ export function useReportHistory() {
           fechado_em_local,
           enviado_para,
           observacao,
-          fechado_por
+          fechado_por,
+          managers!fechado_por (
+            nome,
+            usuario
+          )
         `)
         .gte('dia_operacional', thirtyDaysAgo.toISOString().split('T')[0])
         .order('fechado_em_local', { ascending: false }) // Mais recente primeiro por horário exato
@@ -76,16 +80,29 @@ export function useReportHistory() {
       }
 
       // Transformar dados para o formato esperado
-      const formattedReports: ReportHistory[] = (closings || []).map((closing: any) => ({
-        id: closing.id,
-        diaOperacional: closing.dia_operacional,
-        totalValor: closing.total_valor_centavos / 100, // Converter centavos para reais
-        totalQuantidade: closing.total_qtd,
-        fechadoPor: 'Sistema', // Simplificado por enquanto
-        fechadoEm: new Date(closing.fechado_em_local).toLocaleString('pt-BR'),
-        enviadoPara: closing.enviado_para || [],
-        observacao: closing.observacao,
-      }));
+      const formattedReports: ReportHistory[] = (closings || []).map((closing: any) => {
+        // Buscar nome do gerente
+        let gerenteNome = closing.managers?.nome || 'Sistema';
+        
+        // Se não encontrou o gerente no JOIN, tentar extrair da observação
+        if (gerenteNome === 'Sistema' && closing.observacao) {
+          const observacaoMatch = closing.observacao.match(/Fechamento realizado por (.+?) \(/);
+          if (observacaoMatch) {
+            gerenteNome = observacaoMatch[1];
+          }
+        }
+        
+        return {
+          id: closing.id,
+          diaOperacional: closing.dia_operacional,
+          totalValor: closing.total_valor_centavos / 100, // Converter centavos para reais
+          totalQuantidade: closing.total_qtd,
+          fechadoPor: gerenteNome,
+          fechadoEm: new Date(closing.fechado_em_local).toLocaleString('pt-BR'),
+          enviadoPara: closing.enviado_para || [],
+          observacao: closing.observacao,
+        };
+      });
 
       console.log('🔍 DEBUG - Relatórios do servidor (já ordenados):', {
         total: formattedReports.length,
