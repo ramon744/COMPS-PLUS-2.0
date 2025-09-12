@@ -48,25 +48,10 @@ export function useReportHistory() {
         userId: user?.id
       });
 
-      const { data: closings, error } = await supabase
-        .from('closings')
-        .select(`
-          id,
-          dia_operacional,
-          total_valor_centavos,
-          total_qtd,
-          fechado_em_local,
-          enviado_para,
-          observacao,
-          fechado_por,
-          managers!fechado_por (
-            nome,
-            usuario
-          )
-        `)
-        .gte('dia_operacional', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('fechado_em_local', { ascending: false }) // Mais recente primeiro por horário exato
-        .order('dia_operacional', { ascending: false }); // Fallback por data operacional
+      // Usar RPC para fazer JOIN manual entre closings e managers
+      const { data: closings, error } = await supabase.rpc('get_report_history', {
+        start_date: thirtyDaysAgo.toISOString().split('T')[0]
+      });
 
       console.log('🔍 DEBUG - Resultado da busca de histórico:', {
         closings,
@@ -81,10 +66,10 @@ export function useReportHistory() {
 
       // Transformar dados para o formato esperado
       const formattedReports: ReportHistory[] = (closings || []).map((closing: any) => {
-        // Buscar nome do gerente
-        let gerenteNome = closing.managers?.nome || 'Sistema';
+        // Usar o nome do gerente retornado pela função RPC
+        let gerenteNome = closing.gerente_nome || 'Sistema';
         
-        // Se não encontrou o gerente no JOIN, tentar extrair da observação
+        // Se ainda for 'Sistema', tentar extrair da observação
         if (gerenteNome === 'Sistema' && closing.observacao) {
           const observacaoMatch = closing.observacao.match(/Fechamento realizado por (.+?) \(/);
           if (observacaoMatch) {
