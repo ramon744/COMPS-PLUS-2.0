@@ -122,9 +122,9 @@ export function useManagerFlowSettings() {
       console.log('🔄 Hook: Carregando configurações para usuário:', user.id, 'refreshKey:', refreshKey);
       loadSettings();
     }
-  }, [user?.id, refreshKey]); // Incluir refreshKey para forçar recarregamento
+  }, [user?.id, refreshKey]); // Remover loadSettings da dependência para evitar loops
 
-  // Forçar recarregamento quando settings mudarem
+  // Debug: Log quando settings mudarem
   useEffect(() => {
     console.log('🔄 Hook: Settings mudaram:', settings);
   }, [settings]);

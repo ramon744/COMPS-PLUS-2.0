@@ -109,16 +109,21 @@ export function CompForm({
       setErrors({});
       
       // Focus no campo correto baseado nas configurações individuais
-      setTimeout(() => {
+      // Usar requestAnimationFrame para evitar conflitos de DOM
+      requestAnimationFrame(() => {
         const focoAposSalvar = flowSettings?.foco_apos_salvar ?? 'valor';
         if (focoAposSalvar === 'valor') {
           const valorInput = document.querySelector('input[name="value"]') as HTMLInputElement;
-          valorInput?.focus();
+          if (valorInput && document.contains(valorInput)) {
+            valorInput.focus();
+          }
         } else if (focoAposSalvar === 'motivo') {
           const motivoInput = document.querySelector('textarea[name="motivo"]') as HTMLTextAreaElement;
-          motivoInput?.focus();
+          if (motivoInput && document.contains(motivoInput)) {
+            motivoInput.focus();
+          }
         }
-      }, 100);
+      });
       
       toast({
         title: "COMP salvo com sucesso!",
