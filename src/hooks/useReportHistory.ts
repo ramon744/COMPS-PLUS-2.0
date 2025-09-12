@@ -80,7 +80,7 @@ export function useReportHistory() {
         return {
           id: closing.id,
           diaOperacional: closing.dia_operacional,
-          totalValor: closing.total_valor_centavos / 100, // Converter centavos para reais
+          totalValor: closing.total_valor_centavos / 10000, // Converter centavos para reais (dividir por 10000)
           totalQuantidade: closing.total_qtd,
           fechadoPor: gerenteNome,
           fechadoEm: new Date(closing.fechado_em_local).toLocaleString('pt-BR'),
