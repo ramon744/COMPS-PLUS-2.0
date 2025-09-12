@@ -17,6 +17,11 @@ export function ManagerFlowSettings() {
     ativo: true
   });
 
+  // Log do estado atual do formData
+  useEffect(() => {
+    console.log('📊 Estado atual do formData:', formData);
+  }, [formData]);
+
   // Atualizar formData quando settings carregar
   useEffect(() => {
     if (settings) {
@@ -127,7 +132,10 @@ export function ManagerFlowSettings() {
             </div>
             <Switch
               checked={formData.manter_tipo_selecionado}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, manter_tipo_selecionado: checked }))}
+              onCheckedChange={(checked) => {
+                console.log('🔄 Alterando manter_tipo_selecionado para:', checked);
+                setFormData(prev => ({ ...prev, manter_tipo_selecionado: checked }));
+              }}
               disabled={!formData.ativo}
             />
           </div>
@@ -143,7 +151,10 @@ export function ManagerFlowSettings() {
             </div>
             <Switch
               checked={formData.manter_waiter_selecionado}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, manter_waiter_selecionado: checked }))}
+              onCheckedChange={(checked) => {
+                console.log('🔄 Alterando manter_waiter_selecionado para:', checked);
+                setFormData(prev => ({ ...prev, manter_waiter_selecionado: checked }));
+              }}
               disabled={!formData.ativo}
             />
           </div>
@@ -158,7 +169,10 @@ export function ManagerFlowSettings() {
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={formData.foco_apos_salvar === "valor" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, foco_apos_salvar: "valor" }))}
+                onClick={() => {
+                  console.log('🔄 Alterando foco_apos_salvar para: valor');
+                  setFormData(prev => ({ ...prev, foco_apos_salvar: "valor" }));
+                }}
                 className="justify-start"
                 disabled={!formData.ativo}
               >
@@ -166,7 +180,10 @@ export function ManagerFlowSettings() {
               </Button>
               <Button
                 variant={formData.foco_apos_salvar === "motivo" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, foco_apos_salvar: "motivo" }))}
+                onClick={() => {
+                  console.log('🔄 Alterando foco_apos_salvar para: motivo');
+                  setFormData(prev => ({ ...prev, foco_apos_salvar: "motivo" }));
+                }}
                 className="justify-start"
                 disabled={!formData.ativo}
               >
