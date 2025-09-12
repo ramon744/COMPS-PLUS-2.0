@@ -8,9 +8,6 @@ export interface ConfigData {
   horaCorte: string;
   logoUrl: string;
   textoEmailPadrao: string;
-  manterTipoSelecionado: boolean;
-  manterWaiterSelecionado: boolean;
-  focoAposSalvar: "valor" | "motivo";
   hapticFeedback: boolean;
   valorMaximoComp: number;
   webhookUrl: string;
@@ -22,9 +19,6 @@ const defaultConfig: ConfigData = {
   horaCorte: "05:00",
   logoUrl: "",
   textoEmailPadrao: "Segue em anexo o relatório de COMPs do dia operacional.",
-  manterTipoSelecionado: true,
-  manterWaiterSelecionado: false,
-  focoAposSalvar: "valor",
   hapticFeedback: true,
   valorMaximoComp: 999999999,
   webhookUrl: "",

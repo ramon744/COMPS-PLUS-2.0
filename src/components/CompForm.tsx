@@ -24,6 +24,7 @@ import { MoneyInput } from "./MoneyInput";
 import { Save, SaveAll, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
+import { useManagerFlowSettings } from "@/hooks/useManagerFlowSettings";
 import { CompType, Waiter } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,7 @@ export function CompForm({
 }: CompFormProps) {
   const { toast } = useToast();
   const { config } = useSettings();
+  const { settings: flowSettings } = useManagerFlowSettings();
   const [formData, setFormData] = useState<CompFormData>({
     compTypeId: defaultValues?.compTypeId || "",
     waiterId: defaultValues?.waiterId || "",
@@ -94,14 +96,29 @@ export function CompForm({
     onSubmit(formData, saveAndNew);
 
     if (saveAndNew) {
-      // Reset form but keep selected values based on preferences from settings
+      // Reset form but keep selected values based on individual flow settings
+      const manterTipo = flowSettings?.manter_tipo_selecionado ?? true;
+      const manterWaiter = flowSettings?.manter_waiter_selecionado ?? false;
+      
       setFormData({
-        compTypeId: config.manterTipoSelecionado ? formData.compTypeId : "",
-        waiterId: config.manterWaiterSelecionado ? formData.waiterId : "",
+        compTypeId: manterTipo ? formData.compTypeId : "",
+        waiterId: manterWaiter ? formData.waiterId : "",
         value: 0,
         motivo: "",
       });
       setErrors({});
+      
+      // Focus no campo correto baseado nas configurações individuais
+      setTimeout(() => {
+        const focoAposSalvar = flowSettings?.foco_apos_salvar ?? 'valor';
+        if (focoAposSalvar === 'valor') {
+          const valorInput = document.querySelector('input[name="value"]') as HTMLInputElement;
+          valorInput?.focus();
+        } else if (focoAposSalvar === 'motivo') {
+          const motivoInput = document.querySelector('textarea[name="motivo"]') as HTMLTextAreaElement;
+          motivoInput?.focus();
+        }
+      }, 100);
       
       toast({
         title: "COMP salvo com sucesso!",
@@ -230,6 +247,7 @@ export function CompForm({
 
           {/* Valor */}
           <MoneyInput
+            name="value"
             value={formData.value}
             onChange={(value) => updateFormData("value", value)}
             label="Valor"
@@ -243,6 +261,7 @@ export function CompForm({
               Motivo <span className="text-destructive">*</span>
             </Label>
             <Textarea
+              name="motivo"
               value={formData.motivo}
               onChange={(e) => updateFormData("motivo", e.target.value)}
               placeholder="Descreva o motivo do desconto (mín. 5 caracteres)"

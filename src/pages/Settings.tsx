@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ReportHistory } from "@/components/ReportHistory";
 import { CleanupStatus } from "@/components/CleanupStatus";
 import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
+import { ManagerFlowSettings } from "@/components/ManagerFlowSettings";
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading } = useSettings();
@@ -207,63 +208,7 @@ export default function Settings() {
             </TabsContent>
 
             <TabsContent value="fluxo">
-              <Card className="p-6 bg-gradient-card shadow-card">
-                <h3 className="text-lg font-semibold mb-4">Configurações de Fluxo</h3>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Manter Tipo de COMP Selecionado</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Após registrar um COMP, manter o tipo selecionado para o próximo
-                      </p>
-                    </div>
-                    <Switch
-                      checked={config.manterTipoSelecionado}
-                      onCheckedChange={(checked) => 
-                        setConfig(prev => ({ ...prev, manterTipoSelecionado: checked }))
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Manter Atendente Selecionado</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Após registrar um COMP, manter o atendente selecionado para o próximo
-                      </p>
-                    </div>
-                    <Switch
-                      checked={config.manterWaiterSelecionado}
-                      onCheckedChange={(checked) => 
-                        setConfig(prev => ({ ...prev, manterWaiterSelecionado: checked }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Foco Após Salvar COMP</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant={config.focoAposSalvar === "valor" ? "default" : "outline"}
-                        onClick={() => setConfig(prev => ({ ...prev, focoAposSalvar: "valor" }))}
-                        className="justify-start"
-                      >
-                        Campo Valor
-                      </Button>
-                      <Button
-                        variant={config.focoAposSalvar === "motivo" ? "default" : "outline"}
-                        onClick={() => setConfig(prev => ({ ...prev, focoAposSalvar: "motivo" }))}
-                        className="justify-start"
-                      >
-                        Campo Motivo
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Qual campo deve receber foco automaticamente após salvar um COMP
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              <ManagerFlowSettings />
             </TabsContent>
 
             {isAdmin && (
