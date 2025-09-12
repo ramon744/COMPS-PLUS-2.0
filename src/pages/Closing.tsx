@@ -354,20 +354,18 @@ export default function Closing() {
       
       // Buscar texto personalizado do gerente logado
       let textoPersonalizado = config?.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional.";
-      let assinaturaPersonalizada = "";
       
       if (user?.id) {
         try {
           const { data: emailSettings } = await supabase
             .from('manager_email_settings')
-            .select('texto_padrao, assinatura')
+            .select('texto_padrao')
             .eq('manager_id', user.id)
             .eq('ativo', true)
             .single();
-          
+
           if (emailSettings) {
             textoPersonalizado = emailSettings.texto_padrao || textoPersonalizado;
-            assinaturaPersonalizada = emailSettings.assinatura || "";
           }
         } catch (error) {
           console.log('Usando texto padrão global:', error);
@@ -389,8 +387,7 @@ export default function Closing() {
         Gerente_noturno: nightManager,
         ...compTypePercentages,
         ...emailFields,
-        Texto_padrao_email: textoFinal,
-        Assinatura_email: assinaturaPersonalizada
+        Texto_padrao_email: textoFinal
       };
 
       // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK

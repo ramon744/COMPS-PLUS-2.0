@@ -6,7 +6,6 @@ export interface ManagerEmailSettings {
   id: string;
   manager_id: string;
   texto_padrao: string;
-  assinatura: string;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -80,7 +79,6 @@ export function useManagerEmailSettings() {
           .insert({
             manager_id: user.id,
             texto_padrao: newSettings.texto_padrao || 'Relatório de fechamento do dia operacional {data_operacional}',
-            assinatura: newSettings.assinatura || `Atenciosamente, ${user.user_metadata?.name || 'Gerente'}`,
             ativo: true,
             created_by: user.id,
             updated_by: user.id

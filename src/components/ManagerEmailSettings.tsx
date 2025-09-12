@@ -15,7 +15,6 @@ export function ManagerEmailSettings() {
   const { settings, isLoading, isSaving, error, saveSettings } = useManagerEmailSettings();
   const [formData, setFormData] = useState({
     texto_padrao: '',
-    assinatura: '',
     ativo: true
   });
 
@@ -24,7 +23,6 @@ export function ManagerEmailSettings() {
     if (settings) {
       setFormData({
         texto_padrao: settings.texto_padrao || '',
-        assinatura: settings.assinatura || '',
         ativo: settings.ativo
       });
     }
@@ -43,7 +41,6 @@ export function ManagerEmailSettings() {
     if (settings) {
       setFormData({
         texto_padrao: settings.texto_padrao || '',
-        assinatura: settings.assinatura || '',
         ativo: settings.ativo
       });
     }
@@ -129,21 +126,6 @@ export function ManagerEmailSettings() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="assinatura" className="text-base font-medium">
-              Assinatura
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Assinatura que será adicionada ao final do email
-            </p>
-            <Input
-              id="assinatura"
-              placeholder="Atenciosamente, Seu Nome"
-              value={formData.assinatura}
-              onChange={(e) => setFormData(prev => ({ ...prev, assinatura: e.target.value }))}
-              disabled={!formData.ativo}
-            />
-          </div>
         </div>
 
         <Separator />
