@@ -145,8 +145,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Carregar notificações quando o usuário estiver autenticado
   useEffect(() => {
+    console.log('🔔 useEffect - Carregando notificações, user:', user);
     if (user) {
+      console.log('🔔 useEffect - Usuário autenticado, carregando notificações...');
       loadNotifications();
+    } else {
+      console.log('🔔 useEffect - Usuário não autenticado, limpando notificações');
+      setNotifications([]);
+      setIsLoading(false);
     }
   }, [user, loadNotifications]);
 

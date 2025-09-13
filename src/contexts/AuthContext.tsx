@@ -75,9 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (!isMounted) return;
         
-        if (import.meta.env.DEV) {
-          console.log('🔐 Auth state change:', event, !!session);
-        }
+        console.log('🔐 Auth state change:', event, !!session, session?.user?.id);
         
         setSession(session);
         
