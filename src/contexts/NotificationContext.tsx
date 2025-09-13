@@ -44,6 +44,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     console.log('🔔 Carregando notificações para usuário:', user.id);
+    console.log('🔔 User object:', user);
 
     try {
       const { data, error } = await supabase
@@ -55,18 +56,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       if (error) {
         console.error('❌ Erro ao carregar notificações:', error);
+        console.error('❌ Detalhes do erro:', error);
         return;
       }
 
       console.log('🔔 Notificações carregadas:', data?.length || 0);
       console.log('🔔 Dados das notificações:', data);
+      console.log('🔔 Estado anterior das notificações:', notifications);
+      
       setNotifications(data || []);
+      
+      console.log('🔔 Estado atualizado das notificações:', data || []);
     } catch (error) {
       console.error('❌ Erro ao carregar notificações:', error);
+      console.error('❌ Stack trace:', error.stack);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, notifications]);
 
   const markAsRead = useCallback(async (id: string) => {
     try {
