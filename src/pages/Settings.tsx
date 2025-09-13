@@ -106,31 +106,31 @@ export default function Settings() {
                 {(isAdmin || hasPermission('access_settings_webhook')) && (
                   <TabsTrigger value="webhook" className="flex items-center justify-center w-12 h-10 p-0" title="Webhook">
                     <Send className="w-5 h-5" />
-                  </TabsTrigger>
+              </TabsTrigger>
                 )}
                 {(isAdmin || hasPermission('access_settings_limpeza')) && (
                   <TabsTrigger value="limpeza" className="flex items-center justify-center w-12 h-10 p-0" title="Limpeza">
                     <Trash2 className="w-5 h-5" />
-                  </TabsTrigger>
+              </TabsTrigger>
                 )}
                 {(isAdmin || hasPermission('access_settings_permissoes')) && (
                   <TabsTrigger value="permissoes" className="flex items-center justify-center w-12 h-10 p-0" title="Permissões">
                     <Shield className="w-5 h-5" />
-                  </TabsTrigger>
+              </TabsTrigger>
                 )}
                 
                 {/* Abas Pessoais */}
                 <TabsTrigger value="email-individual" className="flex items-center justify-center w-12 h-10 p-0" title="Meu E-mail">
                   <Mail className="w-5 h-5" />
-                </TabsTrigger>
+              </TabsTrigger>
                 <TabsTrigger value="fluxo" className="flex items-center justify-center w-12 h-10 p-0" title="Fluxo">
                   <FileText className="w-5 h-5" />
-                </TabsTrigger>
+              </TabsTrigger>
                 <TabsTrigger value="historico" className="flex items-center justify-center w-12 h-10 p-0" title="Histórico">
                   <History className="w-5 h-5" />
-                </TabsTrigger>
-              </TabsList>
-              
+              </TabsTrigger>
+            </TabsList>
+
               {/* Indicador de Seção Ativa */}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -368,14 +368,14 @@ export default function Settings() {
               <TabsContent value="permissoes">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <div>
+                      <div>
                       <h3 className="text-lg font-semibold">Gerenciar Permissões</h3>
-                      <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                         Controle o acesso dos gerentes às diferentes seções do sistema
-                      </p>
-                    </div>
+                        </p>
+                      </div>
                     <div className="flex gap-2">
-                      <Button 
+                      <Button
                         onClick={loadPermissions}
                         variant="outline"
                         size="sm"
@@ -383,7 +383,7 @@ export default function Settings() {
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Recarregar
                       </Button>
-                      <Button 
+                            <Button
                         onClick={async () => {
                           const quersonId = '09917606-2f2b-4a70-be82-66352ce65138';
                           console.log('🧪 Testando permissões do Querson Rocha (ID:', quersonId, ')');
@@ -409,17 +409,17 @@ export default function Settings() {
                             description: `Geral: ${hasGeral ? 'SIM' : 'NÃO'}, Email: ${hasEmail ? 'SIM' : 'NÃO'}, Cadastros: ${hasCadastros ? 'SIM' : 'NÃO'}, Webhook: ${hasWebhook ? 'SIM' : 'NÃO'}, Limpeza: ${hasLimpeza ? 'SIM' : 'NÃO'}, Permissões: ${hasPermissoes ? 'SIM' : 'NÃO'}`,
                           });
                         }}
-                        variant="outline"
+                            variant="outline"
                         size="sm"
-                      >
+                          >
                         <User className="w-4 h-4 mr-2" />
                         Testar Querson
-                      </Button>
+                          </Button>
                     </div>
                   </div>
                   <PermissionManager />
                 </div>
-              </TabsContent>
+            </TabsContent>
             )}
 
           </Tabs>

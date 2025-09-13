@@ -51,15 +51,15 @@ Sistema completo para gestão de COMPS (complementos) de funcionários em restau
 - Conta no Supabase
 
 ### 1. Clone o repositório
-```bash
+   ```bash
 git clone https://github.com/seu-usuario/comps-plus-54.git
-cd comps-plus-54
-```
+   cd comps-plus-54
+   ```
 
 ### 2. Instale as dependências
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
 ### 3. Configure as variáveis de ambiente
 ```bash
@@ -75,12 +75,12 @@ VITE_APP_VERSION=1.0.0
 ```
 
 ### 4. Execute o projeto
-```bash
+   ```bash
 # Desenvolvimento
 npm run dev
 
 # Build para produção
-npm run build
+   npm run build
 ```
 
 ## 🗄️ Configuração do Banco de Dados

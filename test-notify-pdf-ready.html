@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste notify_pdf_ready</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Teste da função notify_pdf_ready</h1>
+        
+        <div>
+            <h3>Teste com PDF gerado:</h3>
+            <p><strong>URL do PDF:</strong> https://mywxfyfzonzsnfplyogv.supabase.co/storage/v1/object/public/reports/pdfs/relatorio_1221ac50-93f5-43f8-a711-e465f385bd6d_1757733610282.pdf</p>
+            <br>
+            <button onclick="testNotifyPdfReady()">Testar notify_pdf_ready</button>
+            <button onclick="checkNotifications()">Verificar Notificações</button>
+            <button onclick="clearLogs()">Limpar Logs</button>
+        </div>
+
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logsDiv.appendChild(logDiv);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testNotifyPdfReady() {
+            log('🚀 Testando função notify_pdf_ready...', 'info');
+
+            const supabaseUrl = 'https://dplfodkrsaffzljmteub.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas';
+            
+            const testData = {
+                p_closing_id: '1221ac50-93f5-43f8-a711-e465f385bd6d', // ID extraído da URL do PDF
+                p_pdf_url: 'https://mywxfyfzonzsnfplyogv.supabase.co/storage/v1/object/public/reports/pdfs/relatorio_1221ac50-93f5-43f8-a711-e465f385bd6d_1757733610282.pdf'
+            };
+
+            log(`📤 Chamando notify_pdf_ready com: <pre>${JSON.stringify(testData, null, 2)}</pre>`, 'info');
+
+            try {
+                const response = await fetch(`${supabaseUrl}/rest/v1/rpc/notify_pdf_ready`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'apikey': supabaseKey
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                if (response.ok) {
+                    const responseText = await response.text();
+                    log(`✅ notify_pdf_ready executada com sucesso! Status: ${response.status}`, 'success');
+                    log(`📥 Resposta: <pre>${responseText}</pre>`, 'info');
+                    
+                    // Verificar notificações após 2 segundos
+                    setTimeout(checkNotifications, 2000);
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Erro na função notify_pdf_ready! Status: ${response.status}`, 'error');
+                    log(`📥 Resposta de erro: <pre>${errorText}</pre>`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erro ao chamar notify_pdf_ready: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkNotifications() {
+            log('🔍 Verificando notificações no banco...', 'info');
+
+            const supabaseUrl = 'https://dplfodkrsaffzljmteub.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas';
+
+            try {
+                const response = await fetch(`${supabaseUrl}/rest/v1/notifications?select=*&order=created_at.desc&limit=10`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'apikey': supabaseKey
+                    }
+                });
+
+                if (response.ok) {
+                    const notifications = await response.json();
+                    log(`✅ Notificações encontradas: ${notifications.length}`, 'success');
+                    log(`📋 Notificações: <pre>${JSON.stringify(notifications, null, 2)}</pre>`, 'info');
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Erro ao buscar notificações! Status: ${response.status}`, 'error');
+                    log(`📥 Resposta de erro: <pre>${errorText}</pre>`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erro ao buscar notificações: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
