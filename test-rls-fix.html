@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste RLS Fix</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste RLS Fix - Notificações</h1>
+    <button onclick="testWithAuth()">Testar com Auth</button>
+    <button onclick="testWithoutAuth()">Testar sem Auth</button>
+    <div id="result"></div>
+
+    <script>
+        const supabaseUrl = 'https://mywxfyfzonzsnfplyogv.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15d3hmeWZ6b256c25mcGx5b2d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0MDMwODYsImV4cCI6MjA3MTk3OTA4Nn0.8lzqt8bfzlzr8v-w_JTh4EDmVrO66tlRiaQ9LJbfxas';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function testWithAuth() {
+            try {
+                console.log('🧪 Testando com autenticação...');
+                
+                // Simular login do usuário ADM
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: 'ramonflora2@gmail.com',
+                    password: 'sua_senha_aqui' // Você precisa colocar a senha real
+                });
+
+                if (authError) {
+                    console.error('❌ Erro de autenticação:', authError);
+                    document.getElementById('result').innerHTML = `
+                        <h3>Erro de Autenticação:</h3>
+                        <p style="color: red;">${authError.message}</p>
+                        <p>Coloque a senha real no código para testar com auth.</p>
+                    `;
+                    return;
+                }
+
+                console.log('✅ Usuário autenticado:', authData.user?.id);
+                
+                // Testar carregamento de notificações
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', authData.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    console.error('❌ Erro ao carregar notificações:', error);
+                    document.getElementById('result').innerHTML = `
+                        <h3>Erro ao Carregar Notificações:</h3>
+                        <p style="color: red;">${error.message}</p>
+                    `;
+                    return;
+                }
+
+                console.log('📥 Notificações carregadas:', data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>Teste com Auth - Notificações: ${data.length}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>Erro no Teste:</h3>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+
+        async function testWithoutAuth() {
+            try {
+                console.log('🧪 Testando sem autenticação...');
+                
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', 'd3ce31c3-b6d6-4fca-a414-d3a64a6fa73f')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    console.error('❌ Erro ao carregar notificações:', error);
+                    document.getElementById('result').innerHTML = `
+                        <h3>Erro ao Carregar Notificações (sem auth):</h3>
+                        <p style="color: red;">${error.message}</p>
+                    `;
+                    return;
+                }
+
+                console.log('📥 Notificações carregadas (sem auth):', data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>Teste sem Auth - Notificações: ${data.length}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>Erro no Teste:</h3>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
