@@ -18,6 +18,7 @@ import { CleanupStatus } from "@/components/CleanupStatus";
 import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
 import { ManagerFlowSettings } from "@/components/ManagerFlowSettings";
 import { PermissionManager } from "@/components/PermissionManager";
+import { WebhookTestTab } from "@/components/WebhookTestTab";
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading, isSaving } = useSettings();
@@ -111,6 +112,11 @@ export default function Settings() {
                 {(isAdmin || hasPermission('access_settings_limpeza')) && (
                   <TabsTrigger value="limpeza" className="flex items-center justify-center w-12 h-10 p-0" title="Limpeza">
                     <Trash2 className="w-5 h-5" />
+              </TabsTrigger>
+                )}
+                {isAdmin && (
+                  <TabsTrigger value="teste-webhook" className="flex items-center justify-center w-12 h-10 p-0" title="Teste Webhook">
+                    <Send className="w-5 h-5" />
               </TabsTrigger>
                 )}
                 {(isAdmin || hasPermission('access_settings_permissoes')) && (
@@ -360,6 +366,26 @@ export default function Settings() {
             {isAdmin && (
               <TabsContent value="limpeza">
                 <CleanupStatus />
+              </TabsContent>
+            )}
+
+            {/* Aba de Teste Webhook - Apenas ADM */}
+            {isAdmin && (
+              <TabsContent value="teste-webhook">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        Teste de Webhook
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Teste o envio de dados para o webhook com dados idênticos aos de produção
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <WebhookTestTab />
+                </div>
               </TabsContent>
             )}
 
