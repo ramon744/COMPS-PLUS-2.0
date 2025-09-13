@@ -108,7 +108,74 @@ export function WebhookTestTab() {
     return { funcionariosData, relatorioData };
   };
 
-  const testWebhook = async (type: 'funcionarios' | 'relatorio' | 'completo') => {
+  const testNotification = async () => {
+    setIsLoading(true);
+    const results: TestResult[] = [];
+
+    try {
+      // Testar a nova função simplificada de notificação
+      const response = await fetch('https://mywxfyfzonzsnfplyogv.supabase.co/rest/v1/rpc/notify_pdf_ready_simple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          p_pdf_url: 'https://exemplo.com/relatorio-teste-' + Date.now() + '.pdf'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      results.push({
+        success: true,
+        message: "Notificação criada com sucesso",
+        timestamp: new Date().toISOString(),
+        response: result
+      });
+
+      setTestResults(results);
+      
+      toast({
+        title: "Teste de notificação concluído",
+        description: `Notificações criadas: ${result.notifications_created || 0}`,
+        variant: "default"
+      });
+
+    } catch (error) {
+      console.error('Erro no teste de notificação:', error);
+      
+      results.push({
+        success: false,
+        message: "Erro ao criar notificação",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+
+      setTestResults(results);
+      
+      toast({
+        title: "Erro no teste",
+        description: "Falha ao testar notificação",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testWebhook = async (type: 'funcionarios' | 'relatorio' | 'completo' | 'notificacao') => {
+    if (type === 'notificacao') {
+      // Testar notificação direta (nova função simplificada)
+      await testNotification();
+      return;
+    }
+
     if (!config.webhookAtivo && !customWebhookUrl) {
       toast({
         title: "Webhook não configurado",
@@ -295,7 +362,7 @@ export function WebhookTestTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Button
               onClick={() => testWebhook('funcionarios')}
               disabled={isLoading}
@@ -326,6 +393,66 @@ export function WebhookTestTab() {
               <span>Teste Completo</span>
               <span className="text-xs opacity-70">Fluxo completo</span>
             </Button>
+
+            <Button
+              onClick={() => testWebhook('notificacao')}
+              disabled={isLoading}
+              className="h-20 flex flex-col gap-2"
+              variant="secondary"
+            >
+              <CheckCircle className="h-6 w-6" />
+              <span>Testar Notificação</span>
+              <span className="text-xs opacity-70">Nova função simplificada</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Nova Abordagem Simplificada */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            Nova Abordagem Simplificada
+          </CardTitle>
+          <CardDescription>
+            Sistema simplificado onde N8N gera o PDF e envia apenas o link
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-sm font-bold">1</div>
+                <div>
+                  <h4 className="font-medium text-green-900">N8N Gera PDF</h4>
+                  <p className="text-sm text-green-700">N8N processa os dados e gera o PDF automaticamente</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-sm font-bold">2</div>
+                <div>
+                  <h4 className="font-medium text-green-900">Envia Apenas Link</h4>
+                  <p className="text-sm text-green-700">N8N chama a função <code className="bg-green-100 px-1 rounded">notify_pdf_ready_simple</code> com apenas o URL do PDF</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-sm font-bold">3</div>
+                <div>
+                  <h4 className="font-medium text-green-900">Supabase Notifica</h4>
+                  <p className="text-sm text-green-700">Supabase cria notificações para todos os usuários com link direto</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+              <h5 className="font-medium text-blue-900 mb-2">URL da Função Simplificada:</h5>
+              <code className="text-sm text-blue-700 break-all">
+                https://mywxfyfzonzsnfplyogv.supabase.co/rest/v1/rpc/notify_pdf_ready_simple
+              </code>
+            </div>
           </div>
         </CardContent>
       </Card>
