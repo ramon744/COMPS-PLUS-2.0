@@ -34,6 +34,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { cleanupNotifications } = useCleanup();
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  
+  // Debug do cálculo de unreadCount
+  console.log('🔔 Calculando unreadCount:');
+  console.log('🔔 Total de notificações:', notifications.length);
+  console.log('🔔 Notificações não lidas:', notifications.filter(n => !n.read).length);
+  console.log('🔔 Detalhes das notificações:', notifications.map(n => ({ id: n.id, read: n.read, title: n.title })));
 
   const loadNotifications = useCallback(async () => {
     if (!user) {
