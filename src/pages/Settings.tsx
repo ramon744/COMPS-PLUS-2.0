@@ -354,6 +354,26 @@ export default function Settings() {
                       <p>• Use ferramentas como Zapier, Make ou n8n para processar os dados</p>
                     </div>
                   </div>
+
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={saveSettings}
+                      disabled={isSaving}
+                      className="min-w-[120px]"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Salvar
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </TabsContent>
