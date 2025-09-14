@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Download, ExternalLink, Check, CheckCheck, Eye, X } from 'lucide-react';
+import { Bell, Download, ExternalLink, Check, CheckCheck, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -7,15 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,24 +23,20 @@ export function NotificationBell() {
   console.log('🔔 NotificationBell - isLoading:', isLoading);
   console.log('🔔 NotificationBell - isRealtimeConnected:', isRealtimeConnected);
   console.log('🔔 NotificationBell - notifications.length:', notifications?.length || 0);
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
 
   const handleNotificationClick = async (notification: any) => {
     if (!notification.read) {
       await markAsRead(notification.id);
     }
     
-    // Se for uma notificação de PDF, abrir o modal de visualização
+    // Se for uma notificação de PDF, abrir o link diretamente
     if (notification.type === 'pdf_ready' && notification.pdf_url) {
-      setSelectedPdfUrl(notification.pdf_url);
-      setPdfModalOpen(true);
+      window.open(notification.pdf_url, '_blank');
     }
   };
 
   const handleViewPdf = (pdfUrl: string) => {
-    setSelectedPdfUrl(pdfUrl);
-    setPdfModalOpen(true);
+    window.open(pdfUrl, '_blank');
   };
 
   const handleDownloadPdf = (pdfUrl: string) => {
@@ -199,55 +187,6 @@ export function NotificationBell() {
           </ScrollArea>
         </PopoverContent>
       </Popover>
-
-      {/* Modal de Visualização do PDF */}
-      <Dialog open={pdfModalOpen} onOpenChange={setPdfModalOpen}>
-        <DialogContent className="max-w-4xl h-[80vh] p-0">
-          <DialogHeader className="p-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Visualizar Relatório PDF
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="flex-1 p-4">
-            {selectedPdfUrl ? (
-              <div className="h-full flex flex-col">
-                <div className="flex gap-2 mb-4">
-                  <Button
-                    onClick={() => handleDownloadPdf(selectedPdfUrl)}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Baixar PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(selectedPdfUrl, '_blank')}
-                    className="flex items-center gap-2"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Abrir em Nova Aba
-                  </Button>
-                </div>
-                
-                <div className="flex-1 border rounded-lg overflow-hidden">
-                  <iframe
-                    src={selectedPdfUrl}
-                    className="w-full h-full"
-                    title="Visualização do PDF"
-                    style={{ minHeight: '500px' }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                PDF não disponível
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
