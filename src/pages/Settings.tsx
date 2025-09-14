@@ -310,7 +310,7 @@ export default function Settings() {
                       </p>
                     </div>
                     <Switch
-                      checked={config.webhookAtivo}
+                      checked={config.webhookAtivo || false}
                       onCheckedChange={(checked) => 
                         setConfig(prev => ({ ...prev, webhookAtivo: checked }))
                       }

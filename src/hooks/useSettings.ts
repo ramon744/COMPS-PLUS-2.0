@@ -106,7 +106,32 @@ export function useSettings() {
       
       // Só atualizar se as configurações realmente mudaram
       setConfig(prevConfig => {
-        if (JSON.stringify(prevConfig) !== JSON.stringify(finalConfig)) {
+        // Criar cópias limpas para comparação
+        const cleanPrevConfig = {
+          emailsDestino: prevConfig.emailsDestino,
+          horaCorte: prevConfig.horaCorte,
+          logoUrl: prevConfig.logoUrl,
+          textoEmailPadrao: prevConfig.textoEmailPadrao,
+          hapticFeedback: prevConfig.hapticFeedback,
+          valorMaximoComp: prevConfig.valorMaximoComp,
+          webhookUrl: prevConfig.webhookUrl,
+          webhookAtivo: prevConfig.webhookAtivo,
+          webhookInterval: prevConfig.webhookInterval
+        };
+        
+        const cleanFinalConfig = {
+          emailsDestino: finalConfig.emailsDestino,
+          horaCorte: finalConfig.horaCorte,
+          logoUrl: finalConfig.logoUrl,
+          textoEmailPadrao: finalConfig.textoEmailPadrao,
+          hapticFeedback: finalConfig.hapticFeedback,
+          valorMaximoComp: finalConfig.valorMaximoComp,
+          webhookUrl: finalConfig.webhookUrl,
+          webhookAtivo: finalConfig.webhookAtivo,
+          webhookInterval: finalConfig.webhookInterval
+        };
+        
+        if (JSON.stringify(cleanPrevConfig) !== JSON.stringify(cleanFinalConfig)) {
           return finalConfig;
         }
         return prevConfig;
@@ -169,13 +194,16 @@ export function useSettings() {
         valorMaximoComp: personalConfig.valorMaximoComp || defaultConfig.valorMaximoComp
       };
       
-      // Salvar configurações globais (webhook e emails)
+      // Salvar configurações globais (webhook e emails) - garantir valores não undefined
       const globalConfigData = {
-        webhookUrl,
-        webhookAtivo,
-        webhookInterval,
-        emailsDestino
+        webhookUrl: webhookUrl || '',
+        webhookAtivo: webhookAtivo || false,
+        webhookInterval: webhookInterval || 2,
+        emailsDestino: emailsDestino || defaultConfig.emailsDestino
       };
+
+      console.log('🔍 DEBUG - globalConfigData antes da serialização:', globalConfigData);
+      console.log('🔍 DEBUG - JSON.stringify(globalConfigData):', JSON.stringify(globalConfigData));
 
       // Tentar atualizar configurações globais com verificações de segurança
       try {
