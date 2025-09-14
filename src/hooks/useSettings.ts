@@ -84,7 +84,20 @@ export function useSettings() {
 
       // Aplicar configurações pessoais se existirem
       if (userSettings && !userError) {
-        finalConfig = { ...finalConfig, ...(userSettings.config_value as any) };
+        const userConfig = userSettings.config_value as any;
+        // Criar uma cópia limpa para evitar referências circulares
+        finalConfig = {
+          ...finalConfig,
+          emailsDestino: userConfig.emailsDestino || finalConfig.emailsDestino,
+          horaCorte: userConfig.horaCorte || finalConfig.horaCorte,
+          logoUrl: userConfig.logoUrl || finalConfig.logoUrl,
+          textoEmailPadrao: userConfig.textoEmailPadrao || finalConfig.textoEmailPadrao,
+          hapticFeedback: userConfig.hapticFeedback !== undefined ? userConfig.hapticFeedback : finalConfig.hapticFeedback,
+          valorMaximoComp: userConfig.valorMaximoComp || finalConfig.valorMaximoComp,
+          webhookUrl: userConfig.webhookUrl || finalConfig.webhookUrl,
+          webhookAtivo: userConfig.webhookAtivo !== undefined ? userConfig.webhookAtivo : finalConfig.webhookAtivo,
+          webhookInterval: userConfig.webhookInterval || finalConfig.webhookInterval
+        };
         console.log('✅ Configurações pessoais carregadas para usuário:', user.id);
       } else if (userError) {
         console.warn('⚠️ Nenhuma configuração pessoal encontrada para usuário:', user.id, userError);
@@ -174,6 +187,16 @@ export function useSettings() {
       // Separar configurações pessoais das globais
       const { webhookUrl, webhookAtivo, webhookInterval, emailsDestino, ...personalConfig } = newConfig;
       
+      // Garantir que personalConfig tenha emailsDestino
+      const personalConfigWithEmails = {
+        emailsDestino: (personalConfig as any).emailsDestino || defaultConfig.emailsDestino,
+        horaCorte: personalConfig.horaCorte || defaultConfig.horaCorte,
+        logoUrl: personalConfig.logoUrl || defaultConfig.logoUrl,
+        textoEmailPadrao: personalConfig.textoEmailPadrao || defaultConfig.textoEmailPadrao,
+        hapticFeedback: personalConfig.hapticFeedback !== undefined ? personalConfig.hapticFeedback : defaultConfig.hapticFeedback,
+        valorMaximoComp: personalConfig.valorMaximoComp || defaultConfig.valorMaximoComp
+      };
+      
       // Salvar configurações globais (webhook e emails)
       const globalConfigData = {
         webhookUrl,
@@ -229,7 +252,18 @@ export function useSettings() {
       }
 
       // Salvar configurações pessoais (incluindo webhook para compatibilidade)
-      const personalConfigWithWebhook = { ...personalConfig, webhookUrl, webhookAtivo, webhookInterval, emailsDestino };
+      // Criar uma cópia limpa para evitar referências circulares
+      const personalConfigWithWebhook = {
+        emailsDestino: personalConfigWithEmails.emailsDestino,
+        horaCorte: personalConfigWithEmails.horaCorte || defaultConfig.horaCorte,
+        logoUrl: personalConfigWithEmails.logoUrl || defaultConfig.logoUrl,
+        textoEmailPadrao: personalConfigWithEmails.textoEmailPadrao || defaultConfig.textoEmailPadrao,
+        hapticFeedback: personalConfigWithEmails.hapticFeedback !== undefined ? personalConfigWithEmails.hapticFeedback : defaultConfig.hapticFeedback,
+        valorMaximoComp: personalConfigWithEmails.valorMaximoComp || defaultConfig.valorMaximoComp,
+        webhookUrl,
+        webhookAtivo,
+        webhookInterval
+      };
       
       console.log('🔍 DEBUG - Dados pessoais a salvar:', personalConfigWithWebhook);
       
