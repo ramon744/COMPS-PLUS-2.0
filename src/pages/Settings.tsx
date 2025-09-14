@@ -55,10 +55,10 @@ export default function Settings() {
   };
 
   const addEmail = () => {
-    if (emailInput && !config.emailsDestino.includes(emailInput)) {
+    if (emailInput && !config.emailsDestino?.includes(emailInput)) {
       setConfig(prev => ({
         ...prev,
-        emailsDestino: [...prev.emailsDestino, emailInput]
+        emailsDestino: [...(prev.emailsDestino || []), emailInput]
       }));
       setEmailInput("");
     }
@@ -67,7 +67,7 @@ export default function Settings() {
   const removeEmail = (emailToRemove: string) => {
     setConfig(prev => ({
       ...prev,
-      emailsDestino: prev.emailsDestino.filter(email => email !== emailToRemove)
+      emailsDestino: (prev.emailsDestino || []).filter(email => email !== emailToRemove)
     }));
   };
 
@@ -243,7 +243,7 @@ export default function Settings() {
                     </div>
                     
                     <div className="space-y-2">
-                      {config.emailsDestino.map((email, index) => (
+                      {config.emailsDestino?.map((email, index) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                           <span className="text-sm">{email}</span>
                           <Button

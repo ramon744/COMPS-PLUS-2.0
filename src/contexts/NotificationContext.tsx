@@ -33,13 +33,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { user } = useAuth();
   const { cleanupNotifications } = useCleanup();
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications?.filter(n => !n.read).length || 0;
   
   // Debug do cálculo de unreadCount
   console.log('🔔 Calculando unreadCount:');
-  console.log('🔔 Total de notificações:', notifications.length);
-  console.log('🔔 Notificações não lidas:', notifications.filter(n => !n.read).length);
-  console.log('🔔 Detalhes das notificações:', notifications.map(n => ({ id: n.id, read: n.read, title: n.title })));
+  console.log('🔔 Total de notificações:', notifications?.length || 0);
+  console.log('🔔 Notificações não lidas:', notifications?.filter(n => !n.read).length || 0);
+  console.log('🔔 Detalhes das notificações:', notifications?.map(n => ({ id: n.id, read: n.read, title: n.title })) || []);
 
   const loadNotifications = useCallback(async () => {
     if (!user) {
