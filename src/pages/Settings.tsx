@@ -30,6 +30,18 @@ export default function Settings() {
   // Verificar se o usuário é ADM
   const isAdmin = user?.email === 'ramonflora2@gmail.com';
   
+  // Debug das permissões
+  console.log('🔍 Settings - Debug das permissões:', {
+    isAdmin,
+    user: user?.email,
+    'access_settings_geral': hasPermission('access_settings_geral'),
+    'access_settings_email': hasPermission('access_settings_email'),
+    'access_settings_webhook': hasPermission('access_settings_webhook'),
+    'access_settings_limpeza': hasPermission('access_settings_limpeza'),
+    'access_settings_permissoes': hasPermission('access_settings_permissoes'),
+    'access_cadastros': hasPermission('access_cadastros')
+  });
+  
   
   const [emailInput, setEmailInput] = useState("");
 
@@ -158,7 +170,7 @@ export default function Settings() {
               </div>
             </div>
 
-            {isAdmin && (
+            {(isAdmin || hasPermission('access_settings_geral')) && (
             <TabsContent value="geral">
               <Card className="p-6 bg-gradient-card shadow-card">
                 <h3 className="text-lg font-semibold mb-4">Configurações Gerais</h3>
@@ -210,7 +222,7 @@ export default function Settings() {
             </TabsContent>
             )}
 
-            {isAdmin && (
+            {(isAdmin || hasPermission('access_settings_email')) && (
             <TabsContent value="email">
               <Card className="p-6 bg-gradient-card shadow-card">
                   <h3 className="text-lg font-semibold mb-4">Configurações Globais de E-mail</h3>
@@ -301,7 +313,7 @@ export default function Settings() {
               <ManagerFlowSettings />
             </TabsContent>
 
-            {isAdmin && (
+            {(isAdmin || hasPermission('access_settings_webhook')) && (
             <TabsContent value="webhook">
               <Card className="p-6 bg-gradient-card shadow-card">
                 <h3 className="text-lg font-semibold mb-4">Configurações de Webhook</h3>
@@ -392,7 +404,7 @@ export default function Settings() {
               <ReportHistory />
             </TabsContent>
 
-            {isAdmin && (
+            {(isAdmin || hasPermission('access_settings_limpeza')) && (
               <TabsContent value="limpeza">
                 <CleanupStatus />
               </TabsContent>
@@ -418,8 +430,8 @@ export default function Settings() {
               </TabsContent>
             )}
 
-            {/* Aba de Permissões - Apenas ADM */}
-            {isAdmin && (
+            {/* Aba de Permissões - ADM ou com permissão */}
+            {(isAdmin || hasPermission('access_settings_permissoes')) && (
               <TabsContent value="permissoes">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
