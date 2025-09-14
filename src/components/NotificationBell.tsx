@@ -16,13 +16,6 @@ export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading, isRealtimeConnected } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Debug logs mais detalhados
-  console.log('🔔 NotificationBell - Renderizando componente');
-  console.log('🔔 NotificationBell - notifications:', notifications);
-  console.log('🔔 NotificationBell - unreadCount:', unreadCount);
-  console.log('🔔 NotificationBell - isLoading:', isLoading);
-  console.log('🔔 NotificationBell - isRealtimeConnected:', isRealtimeConnected);
-  console.log('🔔 NotificationBell - notifications.length:', notifications?.length || 0);
 
   const handleNotificationClick = async (notification: any) => {
     if (!notification.read) {

@@ -34,23 +34,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { cleanupNotifications } = useCleanup();
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
-  
-  // Debug do cálculo de unreadCount
-  console.log('🔔 Calculando unreadCount:');
-  console.log('🔔 Total de notificações:', notifications?.length || 0);
-  console.log('🔔 Notificações não lidas:', notifications?.filter(n => !n.read).length || 0);
-  console.log('🔔 Detalhes das notificações:', notifications?.map(n => ({ id: n.id, read: n.read, title: n.title })) || []);
 
   const loadNotifications = useCallback(async () => {
     if (!user) {
-      console.log('🔔 Usuário não autenticado, limpando notificações');
       setNotifications([]);
       setIsLoading(false);
       return;
     }
-
-    console.log('🔔 Carregando notificações para usuário:', user.id);
-    console.log('🔔 User object:', user);
 
     try {
       const { data, error } = await supabase
@@ -62,24 +52,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       if (error) {
         console.error('❌ Erro ao carregar notificações:', error);
-        console.error('❌ Detalhes do erro:', error);
         return;
       }
-
-      console.log('🔔 Notificações carregadas:', data?.length || 0);
-      console.log('🔔 Dados das notificações:', data);
-      console.log('🔔 Estado anterior das notificações:', notifications);
       
       setNotifications(data || []);
-      
-      console.log('🔔 Estado atualizado das notificações:', data || []);
     } catch (error) {
       console.error('❌ Erro ao carregar notificações:', error);
-      console.error('❌ Stack trace:', error.stack);
     } finally {
       setIsLoading(false);
     }
-  }, [user, notifications]);
+  }, [user]);
 
   const markAsRead = useCallback(async (id: string) => {
     try {
@@ -151,12 +133,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Carregar notificações quando o usuário estiver autenticado
   useEffect(() => {
-    console.log('🔔 useEffect - Carregando notificações, user:', user);
     if (user) {
-      console.log('🔔 useEffect - Usuário autenticado, carregando notificações...');
       loadNotifications();
     } else {
-      console.log('🔔 useEffect - Usuário não autenticado, limpando notificações');
       setNotifications([]);
       setIsLoading(false);
     }
@@ -192,7 +171,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!user) return;
 
     const interval = setInterval(() => {
-      console.log('🔄 Fallback: Recarregando notificações periodicamente');
       loadNotifications();
     }, 30000); // Recarregar a cada 30 segundos
 
@@ -204,8 +182,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Real-time subscription para notificações
   useEffect(() => {
     if (!user) return;
-
-    console.log('🔔 Configurando subscription para notificações do usuário:', user.id);
 
     const channel = supabase
       .channel('notifications-changes', {
@@ -223,18 +199,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('🔔 Nova notificação recebida via Realtime:', payload.new);
           const newNotification = payload.new as Notification;
           
           // Verificar se a notificação já existe para evitar duplicatas
           setNotifications(prev => {
             const exists = prev.some(n => n.id === newNotification.id);
             if (exists) {
-              console.log('🔔 Notificação já existe, ignorando duplicata');
               return prev;
             }
             
-            console.log('🔔 Adicionando nova notificação à lista');
             return [newNotification, ...prev];
           });
         }
@@ -248,21 +221,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('🔔 Notificação atualizada via Realtime:', payload.new);
           setNotifications(prev => 
             prev.map(n => n.id === payload.new.id ? payload.new as Notification : n)
           );
         }
       )
       .on('broadcast', { event: 'pdf-received' }, (payload) => {
-        console.log('🔔 Broadcast de PDF recebido:', payload);
         // Recarregar notificações quando receber broadcast
         loadNotifications();
       })
       .subscribe((status) => {
-        console.log('🔔 Status da subscription:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Subscription ativa para notificações');
           setIsRealtimeConnected(true);
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Erro na subscription de notificações');
@@ -271,13 +240,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           console.warn('⚠️ Subscription timeout');
           setIsRealtimeConnected(false);
         } else if (status === 'CLOSED') {
-          console.log('🔌 Subscription fechada');
           setIsRealtimeConnected(false);
         }
       });
 
     return () => {
-      console.log('🔔 Removendo subscription de notificações');
       supabase.removeChannel(channel);
     };
   }, [user, loadNotifications]);
