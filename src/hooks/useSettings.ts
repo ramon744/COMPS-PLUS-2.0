@@ -198,10 +198,35 @@ export function useSettings() {
       // Tentar atualizar configurações globais com verificações de segurança
       try {
         console.log('🔍 DEBUG - Tentando atualizar configurações globais...');
+        console.log('🔍 DEBUG - user.id:', user.id);
+        console.log('🔍 DEBUG - globalConfigData:', globalConfigData);
+        
+        // Primeiro buscar o valor atual para fazer merge
+        const { data: currentGlobal, error: fetchError } = await supabase
+          .from('global_settings')
+          .select('config_value')
+          .eq('config_key', 'global_webhook_settings')
+          .single();
+
+        if (fetchError) {
+          console.error('❌ Erro ao buscar configurações globais atuais:', fetchError);
+          throw new Error(`Erro ao buscar configurações globais: ${fetchError.message}`);
+        }
+
+        // Fazer merge com os valores existentes
+        const mergedGlobalConfig = {
+          ...(currentGlobal?.config_value as any || {}),
+          ...globalConfigData
+        };
+
+        console.log('🔍 DEBUG - Configurações globais atuais:', currentGlobal?.config_value);
+        console.log('🔍 DEBUG - Configurações a adicionar:', globalConfigData);
+        console.log('🔍 DEBUG - Configurações mescladas:', mergedGlobalConfig);
+
         const { error: globalUpdateError } = await supabase
           .from('global_settings')
           .update({
-            config_value: globalConfigData as any,
+            config_value: mergedGlobalConfig as any,
             updated_by: user.id
           })
           .eq('config_key', 'global_webhook_settings');
@@ -255,12 +280,36 @@ export function useSettings() {
       
       console.log('🔍 DEBUG - Dados pessoais a salvar:', personalConfigWithWebhook);
       
+      // Primeiro buscar o valor atual para fazer merge
+      console.log('🔍 DEBUG - Buscando configurações pessoais atuais...');
+      const { data: currentPersonal, error: fetchPersonalError } = await supabase
+        .from('settings')
+        .select('config_value')
+        .eq('user_id', user.id)
+        .eq('config_key', 'app_settings')
+        .single();
+
+      if (fetchPersonalError && fetchPersonalError.code !== 'PGRST116') {
+        console.error('❌ Erro ao buscar configurações pessoais atuais:', fetchPersonalError);
+        throw new Error(`Erro ao buscar configurações pessoais: ${fetchPersonalError.message}`);
+      }
+
+      // Fazer merge com os valores existentes
+      const mergedPersonalConfig = {
+        ...(currentPersonal?.config_value as any || {}),
+        ...personalConfigWithWebhook
+      };
+
+      console.log('🔍 DEBUG - Configurações pessoais atuais:', currentPersonal?.config_value);
+      console.log('🔍 DEBUG - Configurações a adicionar:', personalConfigWithWebhook);
+      console.log('🔍 DEBUG - Configurações pessoais mescladas:', mergedPersonalConfig);
+
       // Primeiro tenta fazer update das configurações pessoais
       console.log('🔍 DEBUG - Tentando atualizar configurações pessoais...');
       const { error: updateError } = await supabase
         .from('settings')
         .update({
-          config_value: personalConfigWithWebhook as any,
+          config_value: mergedPersonalConfig as any,
         })
         .eq('user_id', user.id)
         .eq('config_key', 'app_settings');
