@@ -28,18 +28,7 @@ const defaultConfig: ConfigData = {
 };
 
 export function useSettings() {
-  // Verificação de segurança para o contexto de auth
-  let user = null;
-  let authError = false;
-  
-  try {
-    const authContext = useAuth();
-    user = authContext.user;
-  } catch (error) {
-    console.warn('⚠️ useSettings: AuthContext não disponível, usando configurações padrão');
-    authError = true;
-  }
-  
+  const { user } = useAuth();
   const { toast } = useToast();
   const [config, setConfig] = useState<ConfigData>(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +36,7 @@ export function useSettings() {
 
   // Carregar configurações do banco de dados
   const loadSettings = useCallback(async () => {
-    if (!user || authError) {
+    if (!user) {
       setIsLoading(false);
       return;
     }
@@ -163,12 +152,12 @@ export function useSettings() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, authError, toast]);
+  }, [user, toast]);
 
   // Função interna para salvar sem dependência circular
   const saveSettingsInternal = useCallback(async (newConfig: ConfigData, showToast = true) => {
-    if (!user || authError) {
-      console.error('❌ Usuário não autenticado ou erro de auth:', { user, authError });
+    if (!user) {
+      console.error('❌ Usuário não autenticado:', { user });
       if (showToast) {
         toast({
           title: "Erro de autenticação",
@@ -342,7 +331,7 @@ export function useSettings() {
     } finally {
       setIsSaving(false);
     }
-  }, [user, authError, toast]);
+  }, [user, toast]);
 
   // Salvar configurações no banco de dados
   const saveSettings = useCallback(async (newConfig: ConfigData) => {
@@ -351,14 +340,14 @@ export function useSettings() {
 
   // Carregar configurações quando o usuário está autenticado
   useEffect(() => {
-    if (user && !authError) {
+    if (user) {
       loadSettings();
     }
-  }, [user, authError, loadSettings]);
+  }, [user, loadSettings]);
 
   // Real-time subscription para mudanças nas configurações
   useEffect(() => {
-    if (!user || authError) return;
+    if (!user) return;
 
     const channel = supabase
       .channel('settings-changes')
@@ -395,7 +384,7 @@ export function useSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, authError, loadSettings]);
+  }, [user, loadSettings]);
 
   return {
     config,
