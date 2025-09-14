@@ -57,5 +57,6 @@ export function useWebhook() {
 
   return {
     sendWebhook,
+    webhookInterval: config.webhookInterval || 2,
   };
 }

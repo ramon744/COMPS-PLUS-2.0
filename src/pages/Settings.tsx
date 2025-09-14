@@ -342,6 +342,22 @@ export default function Settings() {
                     </p>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>Intervalo entre Envios (segundos)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={config.webhookInterval || 2}
+                      onChange={(e) => setConfig(prev => ({ ...prev, webhookInterval: parseInt(e.target.value) || 2 }))}
+                      disabled={!config.webhookAtivo}
+                      className="w-32"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Tempo de espera entre cada envio de dados (1-60 segundos)
+                    </p>
+                  </div>
+
                   <div className="p-4 bg-info/10 rounded-lg border border-info/20">
                     <div className="flex items-center gap-2 mb-2">
                       <Send className="h-4 w-4 text-info" />
@@ -350,7 +366,7 @@ export default function Settings() {
                     <div className="text-sm text-muted-foreground space-y-2">
                       <p>• Primeiro são enviados os dados individuais de cada funcionário</p>
                       <p>• Por último são enviados os dados gerais do relatório (que dispara o e-mail)</p>
-                      <p>• Cada envio tem um intervalo de 2 segundos</p>
+                      <p>• Cada envio tem um intervalo de {config.webhookInterval || 2} segundos</p>
                       <p>• Use ferramentas como Zapier, Make ou n8n para processar os dados</p>
                     </div>
                   </div>

@@ -12,6 +12,7 @@ export interface ConfigData {
   valorMaximoComp: number;
   webhookUrl: string;
   webhookAtivo: boolean;
+  webhookInterval: number;
 }
 
 const defaultConfig: ConfigData = {
@@ -23,6 +24,7 @@ const defaultConfig: ConfigData = {
   valorMaximoComp: 999999999,
   webhookUrl: "",
   webhookAtivo: false,
+  webhookInterval: 2,
 };
 
 export function useSettings() {
@@ -82,7 +84,7 @@ export function useSettings() {
 
       // Aplicar configurações pessoais se existirem
       if (userSettings && !userError) {
-        finalConfig = { ...finalConfig, ...(userSettings.config_value as ConfigData) };
+        finalConfig = { ...finalConfig, ...(userSettings.config_value as any) };
         console.log('✅ Configurações pessoais carregadas para usuário:', user.id);
       } else if (userError) {
         console.warn('⚠️ Nenhuma configuração pessoal encontrada para usuário:', user.id, userError);
@@ -100,6 +102,7 @@ export function useSettings() {
           ...finalConfig,
           webhookUrl: globalConfig.webhookUrl || '',
           webhookAtivo: globalConfig.webhookAtivo || false,
+          webhookInterval: globalConfig.webhookInterval || 2,
           emailsDestino: globalConfig.emailsDestino || defaultConfig.emailsDestino
         };
         if (import.meta.env.DEV) {
@@ -157,12 +160,13 @@ export function useSettings() {
     try {
       setIsSaving(true);
       // Separar configurações pessoais das globais
-      const { webhookUrl, webhookAtivo, emailsDestino, ...personalConfig } = newConfig;
+      const { webhookUrl, webhookAtivo, webhookInterval, emailsDestino, ...personalConfig } = newConfig;
       
       // Salvar configurações globais (webhook e emails)
       const globalConfigData = {
         webhookUrl,
         webhookAtivo,
+        webhookInterval,
         emailsDestino
       };
 
@@ -213,7 +217,7 @@ export function useSettings() {
       }
 
       // Salvar configurações pessoais (incluindo webhook para compatibilidade)
-      const personalConfigWithWebhook = { ...personalConfig, webhookUrl, webhookAtivo, emailsDestino };
+      const personalConfigWithWebhook = { ...personalConfig, webhookUrl, webhookAtivo, webhookInterval, emailsDestino };
       
       console.log('🔍 DEBUG - Dados pessoais a salvar:', personalConfigWithWebhook);
       

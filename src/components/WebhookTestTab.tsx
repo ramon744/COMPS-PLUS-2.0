@@ -220,9 +220,9 @@ export function WebhookTestTab() {
               response: await response.json()
             });
 
-            // Aguardar 2 segundos entre envios (como na produção)
+            // Aguardar intervalo configurado entre envios (como na produção)
             if (i < funcionariosData.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise(resolve => setTimeout(resolve, (config.webhookInterval || 2) * 1000));
             }
           } catch (error) {
             results.push({

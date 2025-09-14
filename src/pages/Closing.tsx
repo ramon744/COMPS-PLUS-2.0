@@ -49,7 +49,7 @@ export default function Closing() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { getClosingData } = useComps();
-  const { sendWebhook } = useWebhook();
+  const { sendWebhook, webhookInterval } = useWebhook();
   const { currentOperationalDay, formatOperationalDayDisplay } = useOperationalDay();
   const { getActiveManagers } = useRegistry();
   const { config } = useSettings();
@@ -340,8 +340,8 @@ export default function Closing() {
           currentStep++;
           setProgress((currentStep / totalSteps) * 100);
           
-          // Aguardar 2 segundos antes do próximo envio
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Aguardar intervalo configurado antes do próximo envio
+          await new Promise(resolve => setTimeout(resolve, (webhookInterval || 2) * 1000));
         }
       }
 
