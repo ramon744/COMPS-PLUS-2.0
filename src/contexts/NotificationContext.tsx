@@ -139,7 +139,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setNotifications([]);
       setIsLoading(false);
     }
-  }, [user, loadNotifications]);
+  }, [user]); // Removido loadNotifications da dependência para evitar loop
 
   // Limpeza automática de notificações às 5h (início do dia operacional)
   useEffect(() => {
@@ -177,7 +177,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       clearInterval(interval);
     };
-  }, [user, loadNotifications]);
+  }, [user]); // Removido loadNotifications da dependência para evitar loop
 
   // Real-time subscription para notificações
   useEffect(() => {
@@ -247,7 +247,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, loadNotifications]);
+  }, [user]); // Removido loadNotifications da dependência para evitar loop
 
   return (
     <NotificationContext.Provider

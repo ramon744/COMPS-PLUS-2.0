@@ -104,7 +104,13 @@ export function useSettings() {
       }
 
       
-      setConfig(finalConfig);
+      // Só atualizar se as configurações realmente mudaram
+      setConfig(prevConfig => {
+        if (JSON.stringify(prevConfig) !== JSON.stringify(finalConfig)) {
+          return finalConfig;
+        }
+        return prevConfig;
+      });
       
       // Atualizar localStorage com as configurações finais (cópia limpa)
       const cleanFinalConfig = {
@@ -296,7 +302,7 @@ export function useSettings() {
     if (user) {
       loadSettings();
     }
-  }, [user, loadSettings]);
+  }, [user]); // Removido loadSettings da dependência para evitar loop
 
   // Real-time subscription para mudanças nas configurações
   useEffect(() => {
@@ -337,7 +343,7 @@ export function useSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, loadSettings]);
+  }, [user]); // Removido loadSettings da dependência para evitar loop
 
   return {
     config,

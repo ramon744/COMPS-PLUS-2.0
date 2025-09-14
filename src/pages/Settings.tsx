@@ -56,19 +56,25 @@ export default function Settings() {
 
   const addEmail = () => {
     if (emailInput && !config.emailsDestino?.includes(emailInput)) {
-      setConfig(prev => ({
-        ...prev,
-        emailsDestino: [...(prev.emailsDestino || []), emailInput]
-      }));
+      setConfig(prev => {
+        const newEmails = [...(prev.emailsDestino || []), emailInput];
+        return {
+          ...prev,
+          emailsDestino: newEmails
+        };
+      });
       setEmailInput("");
     }
   };
 
   const removeEmail = (emailToRemove: string) => {
-    setConfig(prev => ({
-      ...prev,
-      emailsDestino: (prev.emailsDestino || []).filter(email => email !== emailToRemove)
-    }));
+    setConfig(prev => {
+      const filteredEmails = (prev.emailsDestino || []).filter(email => email !== emailToRemove);
+      return {
+        ...prev,
+        emailsDestino: filteredEmails
+      };
+    });
   };
 
 
@@ -244,7 +250,7 @@ export default function Settings() {
                     
                     <div className="space-y-2">
                       {config.emailsDestino?.map((email, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div key={`email-${email}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                           <span className="text-sm">{email}</span>
                           <Button
                             variant="ghost"
