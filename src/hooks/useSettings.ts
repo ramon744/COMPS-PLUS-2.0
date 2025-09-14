@@ -74,6 +74,7 @@ export function useSettings() {
       // Aplicar configurações pessoais se existirem
       if (userSettings && !userError) {
         const userConfig = userSettings.config_value as any;
+        console.log('🔍 DEBUG - Configurações pessoais encontradas:', userConfig);
         // Criar uma cópia limpa para evitar referências circulares
         finalConfig = {
           ...finalConfig,
@@ -88,6 +89,7 @@ export function useSettings() {
           webhookInterval: userConfig.webhookInterval || finalConfig.webhookInterval
         };
         console.log('✅ Configurações pessoais carregadas para usuário:', user.id);
+        console.log('🔍 DEBUG - finalConfig após configurações pessoais:', finalConfig);
       } else if (userError) {
         console.warn('⚠️ Nenhuma configuração pessoal encontrada para usuário:', user.id, userError);
       } else {
@@ -97,9 +99,7 @@ export function useSettings() {
       // Aplicar configurações globais se existirem (sobrescrever webhook e emails)
       if (globalSettings && !globalError) {
         const globalConfig = globalSettings.config_value as any;
-        if (import.meta.env.DEV) {
-          console.log('🌍 DEBUG - Configurações globais encontradas:', globalConfig);
-        }
+        console.log('🌍 DEBUG - Configurações globais encontradas:', globalConfig);
         finalConfig = {
           ...finalConfig,
           webhookUrl: globalConfig.webhookUrl || '',
@@ -107,13 +107,12 @@ export function useSettings() {
           webhookInterval: globalConfig.webhookInterval || 2,
           emailsDestino: globalConfig.emailsDestino || defaultConfig.emailsDestino
         };
-        if (import.meta.env.DEV) {
-          console.log('🌍 DEBUG - Config final após aplicar globais:', {
-            webhookUrl: finalConfig.webhookUrl,
-            webhookAtivo: finalConfig.webhookAtivo,
-            emailsDestino: finalConfig.emailsDestino
-          });
-        }
+        console.log('🌍 DEBUG - Config final após aplicar globais:', {
+          webhookUrl: finalConfig.webhookUrl,
+          webhookAtivo: finalConfig.webhookAtivo,
+          webhookInterval: finalConfig.webhookInterval,
+          emailsDestino: finalConfig.emailsDestino
+        });
       } else if (globalError && globalError.code !== 'PGRST116') {
         console.error('Erro ao carregar configurações globais:', globalError);
       } else if (globalError?.code === 'PGRST116') {
