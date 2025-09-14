@@ -139,11 +139,20 @@ export function useSettings() {
 
   // Função interna para salvar sem dependência circular
   const saveSettingsInternal = useCallback(async (newConfig: ConfigData, showToast = true) => {
-    if (!user || authError) return;
-
-    if (import.meta.env.DEV) {
-      console.log('🔍 DEBUG - Salvando configurações');
+    if (!user || authError) {
+      console.error('❌ Usuário não autenticado ou erro de auth:', { user, authError });
+      if (showToast) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Usuário não está autenticado.",
+          variant: "destructive",
+        });
+      }
+      return;
     }
+
+    console.log('🔍 DEBUG - Salvando configurações para usuário:', user.id);
+    console.log('🔍 DEBUG - Configurações a salvar:', newConfig);
 
     try {
       setIsSaving(true);
@@ -157,8 +166,11 @@ export function useSettings() {
         emailsDestino
       };
 
+      console.log('🔍 DEBUG - Dados globais a salvar:', globalConfigData);
+
       // Tentar atualizar configurações globais com verificações de segurança
       try {
+        console.log('🔍 DEBUG - Tentando atualizar configurações globais...');
         const { error: globalUpdateError } = await supabase
           .from('global_settings')
           .update({
@@ -167,8 +179,11 @@ export function useSettings() {
           })
           .eq('config_key', 'global_webhook_settings');
 
+        console.log('🔍 DEBUG - Resultado do update global:', { globalUpdateError });
+
         // Se não conseguiu fazer update global, fazer insert
         if (globalUpdateError?.code === 'PGRST116') {
+          console.log('🔍 DEBUG - Registro global não existe, fazendo insert...');
           const { error: globalInsertError } = await supabase
             .from('global_settings')
             .insert({
@@ -178,25 +193,32 @@ export function useSettings() {
               updated_by: user.id
             });
 
+          console.log('🔍 DEBUG - Resultado do insert global:', { globalInsertError });
+
           if (globalInsertError) {
-            console.error('Erro ao inserir configurações globais:', globalInsertError);
-            // Não falhar completamente, apenas avisar
-            console.warn('Continuando com salvamento das configurações pessoais...');
+            console.error('❌ Erro ao inserir configurações globais:', globalInsertError);
+            throw new Error(`Erro ao inserir configurações globais: ${globalInsertError.message}`);
+          } else {
+            console.log('✅ Configurações globais inseridas com sucesso');
           }
         } else if (globalUpdateError) {
-          console.error('Erro ao atualizar configurações globais:', globalUpdateError);
-          // Não falhar completamente, apenas avisar
-          console.warn('Continuando com salvamento das configurações pessoais...');
+          console.error('❌ Erro ao atualizar configurações globais:', globalUpdateError);
+          throw new Error(`Erro ao atualizar configurações globais: ${globalUpdateError.message}`);
+        } else {
+          console.log('✅ Configurações globais atualizadas com sucesso');
         }
       } catch (globalSaveError) {
-        console.warn('Aviso: Erro ao salvar configurações globais:', globalSaveError);
-        // Continuar com salvamento pessoal mesmo se global falhar
+        console.error('❌ Erro ao salvar configurações globais:', globalSaveError);
+        throw new Error(`Erro ao salvar configurações globais: ${globalSaveError instanceof Error ? globalSaveError.message : 'Erro desconhecido'}`);
       }
 
       // Salvar configurações pessoais (incluindo webhook para compatibilidade)
       const personalConfigWithWebhook = { ...personalConfig, webhookUrl, webhookAtivo, emailsDestino };
       
+      console.log('🔍 DEBUG - Dados pessoais a salvar:', personalConfigWithWebhook);
+      
       // Primeiro tenta fazer update das configurações pessoais
+      console.log('🔍 DEBUG - Tentando atualizar configurações pessoais...');
       const { error: updateError } = await supabase
         .from('settings')
         .update({
@@ -205,15 +227,11 @@ export function useSettings() {
         .eq('user_id', user.id)
         .eq('config_key', 'app_settings');
 
-      if (import.meta.env.DEV) {
-        console.log('📝 DEBUG - Resultado do update pessoal:', { updateError });
-      }
+      console.log('🔍 DEBUG - Resultado do update pessoal:', { updateError });
 
       // Se não conseguiu fazer update (registro não existe), faz insert
       if (updateError?.code === 'PGRST116') {
-        if (import.meta.env.DEV) {
-          console.log('📝 DEBUG - Registro não existe, fazendo insert...');
-        }
+        console.log('🔍 DEBUG - Registro pessoal não existe, fazendo insert...');
         const { error: insertError } = await supabase
           .from('settings')
           .insert({
@@ -222,16 +240,18 @@ export function useSettings() {
             config_value: personalConfigWithWebhook as any,
           });
 
-        if (import.meta.env.DEV) {
-          console.log('📝 DEBUG - Resultado do insert pessoal:', { insertError });
-        }
+        console.log('🔍 DEBUG - Resultado do insert pessoal:', { insertError });
         if (insertError) {
-          console.error('Erro ao inserir configurações:', insertError);
-          throw insertError;
+          console.error('❌ Erro ao inserir configurações pessoais:', insertError);
+          throw new Error(`Erro ao inserir configurações pessoais: ${insertError.message}`);
+        } else {
+          console.log('✅ Configurações pessoais inseridas com sucesso');
         }
       } else if (updateError) {
-        console.error('Erro ao atualizar configurações:', updateError);
-        throw updateError;
+        console.error('❌ Erro ao atualizar configurações pessoais:', updateError);
+        throw new Error(`Erro ao atualizar configurações pessoais: ${updateError.message}`);
+      } else {
+        console.log('✅ Configurações pessoais atualizadas com sucesso');
       }
 
       setConfig(newConfig);
@@ -239,9 +259,7 @@ export function useSettings() {
       // Manter compatibilidade com localStorage para componentes que ainda usam
       localStorage.setItem('app-settings', JSON.stringify(newConfig));
 
-      if (import.meta.env.DEV) {
-        console.log('✅ DEBUG - Configurações salvas com sucesso (pessoais + globais)');
-      }
+      console.log('✅ Configurações salvas com sucesso (pessoais + globais)');
 
       if (showToast) {
         toast({
@@ -250,11 +268,11 @@ export function useSettings() {
         });
       }
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('❌ Erro ao salvar configurações:', error);
       if (showToast) {
         toast({
           title: "Erro ao salvar",
-          description: "Não foi possível salvar as configurações.",
+          description: error instanceof Error ? error.message : "Não foi possível salvar as configurações.",
           variant: "destructive",
         });
       }
