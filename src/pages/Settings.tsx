@@ -174,7 +174,7 @@ export default function Settings() {
                     <Label>Hora de Corte do Dia Operacional</Label>
                     <Input
                       type="time"
-                      value={config.horaCorte}
+                      value={config.horaCorte || "23:00"}
                       onChange={(e) => setConfig(prev => ({ ...prev, horaCorte: e.target.value }))}
                     />
                     <p className="text-sm text-muted-foreground">
@@ -186,7 +186,7 @@ export default function Settings() {
                     <Label>URL do Logo</Label>
                     <Input
                       type="url"
-                      value={config.logoUrl}
+                      value={config.logoUrl || ""}
                       onChange={(e) => setConfig(prev => ({ ...prev, logoUrl: e.target.value }))}
                       placeholder="https://exemplo.com/logo.png"
                     />
@@ -199,7 +199,7 @@ export default function Settings() {
                     <Label>Valor Máximo por COMP (R$)</Label>
                     <Input
                       type="number"
-                      value={config.valorMaximoComp / 100}
+                      value={(config.valorMaximoComp || 50000) / 100}
                       onChange={(e) => setConfig(prev => ({ 
                         ...prev, 
                         valorMaximoComp: Math.round(parseFloat(e.target.value || "0") * 100)
@@ -332,7 +332,7 @@ export default function Settings() {
                     <Label>URL do Webhook</Label>
                     <Input
                       type="url"
-                      value={config.webhookUrl}
+                      value={config.webhookUrl || ""}
                       onChange={(e) => setConfig(prev => ({ ...prev, webhookUrl: e.target.value }))}
                       placeholder="https://hooks.zapier.com/hooks/catch/..."
                       disabled={!config.webhookAtivo}
