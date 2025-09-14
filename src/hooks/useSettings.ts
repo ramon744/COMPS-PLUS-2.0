@@ -125,8 +125,20 @@ export function useSettings() {
       
       setConfig(finalConfig);
       
-      // Atualizar localStorage com as configurações finais
-      localStorage.setItem('app-settings', JSON.stringify(finalConfig));
+      // Atualizar localStorage com as configurações finais (cópia limpa)
+      const cleanFinalConfig = {
+        emailsDestino: finalConfig.emailsDestino,
+        horaCorte: finalConfig.horaCorte,
+        logoUrl: finalConfig.logoUrl,
+        textoEmailPadrao: finalConfig.textoEmailPadrao,
+        hapticFeedback: finalConfig.hapticFeedback,
+        valorMaximoComp: finalConfig.valorMaximoComp,
+        webhookUrl: finalConfig.webhookUrl,
+        webhookAtivo: finalConfig.webhookAtivo,
+        webhookInterval: finalConfig.webhookInterval
+      };
+      
+      localStorage.setItem('app-settings', JSON.stringify(cleanFinalConfig));
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
       toast({
@@ -261,7 +273,20 @@ export function useSettings() {
       setConfig(newConfig);
 
       // Manter compatibilidade com localStorage para componentes que ainda usam
-      localStorage.setItem('app-settings', JSON.stringify(newConfig));
+      // Criar uma cópia limpa para evitar referências circulares
+      const cleanConfig = {
+        emailsDestino: newConfig.emailsDestino,
+        horaCorte: newConfig.horaCorte,
+        logoUrl: newConfig.logoUrl,
+        textoEmailPadrao: newConfig.textoEmailPadrao,
+        hapticFeedback: newConfig.hapticFeedback,
+        valorMaximoComp: newConfig.valorMaximoComp,
+        webhookUrl: newConfig.webhookUrl,
+        webhookAtivo: newConfig.webhookAtivo,
+        webhookInterval: newConfig.webhookInterval
+      };
+      
+      localStorage.setItem('app-settings', JSON.stringify(cleanConfig));
 
       console.log('✅ Configurações salvas com sucesso (pessoais + globais)');
 
