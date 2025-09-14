@@ -34,6 +34,10 @@ export default function Settings() {
   const [emailInput, setEmailInput] = useState("");
 
   const handleSave = async () => {
+    console.log('🔍 DEBUG - handleSave - config atual:', config);
+    console.log('🔍 DEBUG - handleSave - webhookUrl:', config.webhookUrl);
+    console.log('🔍 DEBUG - handleSave - webhookAtivo:', config.webhookAtivo);
+    console.log('🔍 DEBUG - handleSave - webhookInterval:', config.webhookInterval);
     await saveSettings(config);
   };
 
@@ -362,7 +366,7 @@ export default function Settings() {
 
                   <div className="flex justify-end">
                     <Button 
-                      onClick={saveSettings}
+                      onClick={handleSave}
                       disabled={isSaving}
                       className="min-w-[120px]"
                     >

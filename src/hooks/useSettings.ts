@@ -181,8 +181,20 @@ export function useSettings() {
 
     try {
       setIsSaving(true);
+      
+      console.log('🔍 DEBUG - newConfig recebido:', newConfig);
+      console.log('🔍 DEBUG - newConfig.webhookUrl:', newConfig.webhookUrl);
+      console.log('🔍 DEBUG - newConfig.webhookAtivo:', newConfig.webhookAtivo);
+      console.log('🔍 DEBUG - newConfig.webhookInterval:', newConfig.webhookInterval);
+      
       // Separar configurações pessoais das globais
       const { webhookUrl, webhookAtivo, webhookInterval, emailsDestino, ...personalConfig } = newConfig;
+      
+      console.log('🔍 DEBUG - Valores extraídos:');
+      console.log('🔍 DEBUG - webhookUrl:', webhookUrl);
+      console.log('🔍 DEBUG - webhookAtivo:', webhookAtivo);
+      console.log('🔍 DEBUG - webhookInterval:', webhookInterval);
+      console.log('🔍 DEBUG - emailsDestino:', emailsDestino);
       
       // Garantir que personalConfig tenha emailsDestino
       const personalConfigWithEmails = {
