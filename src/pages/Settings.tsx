@@ -30,26 +30,11 @@ export default function Settings() {
   // Verificar se o usuário é ADM
   const isAdmin = user?.email === 'ramonflora2@gmail.com';
   
-  // Debug das permissões
-  console.log('🔍 Settings - Debug das permissões:', {
-    isAdmin,
-    user: user?.email,
-    'access_settings_geral': hasPermission('access_settings_geral'),
-    'access_settings_email': hasPermission('access_settings_email'),
-    'access_settings_webhook': hasPermission('access_settings_webhook'),
-    'access_settings_limpeza': hasPermission('access_settings_limpeza'),
-    'access_settings_permissoes': hasPermission('access_settings_permissoes'),
-    'access_cadastros': hasPermission('access_cadastros')
-  });
   
   
   const [emailInput, setEmailInput] = useState("");
 
   const handleSave = async () => {
-    console.log('🔍 DEBUG - handleSave - config atual:', config);
-    console.log('🔍 DEBUG - handleSave - webhookUrl:', config.webhookUrl);
-    console.log('🔍 DEBUG - handleSave - webhookAtivo:', config.webhookAtivo);
-    console.log('🔍 DEBUG - handleSave - webhookInterval:', config.webhookInterval);
     await saveSettings(config);
   };
 
@@ -450,38 +435,6 @@ export default function Settings() {
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Recarregar
                       </Button>
-                            <Button
-                        onClick={async () => {
-                          const quersonId = '09917606-2f2b-4a70-be82-66352ce65138';
-                          console.log('🧪 Testando permissões do Querson Rocha (ID:', quersonId, ')');
-                          
-                          const hasGeral = await testUserPermission(quersonId, 'access_settings_geral');
-                          const hasEmail = await testUserPermission(quersonId, 'access_settings_email');
-                          const hasCadastros = await testUserPermission(quersonId, 'access_cadastros');
-                          const hasWebhook = await testUserPermission(quersonId, 'access_settings_webhook');
-                          const hasLimpeza = await testUserPermission(quersonId, 'access_settings_limpeza');
-                          const hasPermissoes = await testUserPermission(quersonId, 'access_settings_permissoes');
-                          
-                          console.log('🧪 Teste Querson Rocha - Resultados:', {
-                            geral: hasGeral,
-                            email: hasEmail,
-                            cadastros: hasCadastros,
-                            webhook: hasWebhook,
-                            limpeza: hasLimpeza,
-                            permissoes: hasPermissoes
-                          });
-                          
-                          toast({
-                            title: "Teste de Permissões - Querson Rocha",
-                            description: `Geral: ${hasGeral ? 'SIM' : 'NÃO'}, Email: ${hasEmail ? 'SIM' : 'NÃO'}, Cadastros: ${hasCadastros ? 'SIM' : 'NÃO'}, Webhook: ${hasWebhook ? 'SIM' : 'NÃO'}, Limpeza: ${hasLimpeza ? 'SIM' : 'NÃO'}, Permissões: ${hasPermissoes ? 'SIM' : 'NÃO'}`,
-                          });
-                        }}
-                            variant="outline"
-                        size="sm"
-                          >
-                        <User className="w-4 h-4 mr-2" />
-                        Testar Querson
-                          </Button>
                     </div>
                   </div>
                   <PermissionManager />
