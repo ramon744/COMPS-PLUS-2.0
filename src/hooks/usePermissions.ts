@@ -66,29 +66,19 @@ export function usePermissions() {
   // Verificar se o usuário tem uma permissão específica
   const hasPermission = useCallback((permissionKey: string): boolean => {
     if (!user) {
-      console.log('🔍 hasPermission - Sem usuário');
       return false;
     }
     
     // ADM sempre tem todas as permissões
     if (user.email === 'ramonflora2@gmail.com') {
-      console.log('🔍 hasPermission - ADM, permissão concedida:', permissionKey);
       return true;
     }
-    
-    console.log('🔍 hasPermission - Usuário:', user.email, 'ID:', user.id);
-    console.log('🔍 hasPermission - Permissão solicitada:', permissionKey);
-    console.log('🔍 hasPermission - Permissões disponíveis:', permissions);
-    console.log('🔍 hasPermission - Total de permissões:', permissions.length);
     
     // Buscar permissão - agora as permissões já vêm com o ID correto do manager
     const permission = permissions.find(p => 
       p.permission_key === permissionKey && 
       p.granted
     );
-    
-    console.log('🔍 hasPermission - Permissão encontrada:', permission);
-    console.log('🔍 hasPermission - Resultado:', !!permission);
     
     return !!permission;
   }, [user, permissions]);
@@ -115,13 +105,7 @@ export function usePermissions() {
         throw fetchError;
       }
 
-      console.log('🔍 Permissões carregadas para usuário:', user.email, data);
-      console.log('🔍 Total de permissões carregadas:', (data as any)?.length || 0);
       setPermissions((data as any) || []);
-      
-      if (showToast) {
-        console.log('✅ Permissões recarregadas com sucesso');
-      }
     } catch (err) {
       console.error('Erro ao carregar permissões:', err);
       setError('Erro ao carregar permissões');
@@ -135,7 +119,7 @@ export function usePermissions() {
     if (user) {
       loadPermissions();
     }
-  }, [user, loadPermissions]);
+  }, [user]); // Removido loadPermissions da dependência para evitar loop
 
   // Listener para mudanças em tempo real nas permissões
   useEffect(() => {
@@ -152,17 +136,10 @@ export function usePermissions() {
           filter: `manager_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('🔄 Mudança detectada nas permissões:', payload);
-          console.log('🔄 Usuário atual:', user.email, 'ID:', user.id);
-          console.log('🔄 Manager ID da mudança:', (payload.new as any)?.manager_id || (payload.old as any)?.manager_id);
-          
           // Verificar se a mudança é para o usuário atual
           const changedManagerId = (payload.new as any)?.manager_id || (payload.old as any)?.manager_id;
           if (changedManagerId === user.id) {
-            console.log('🔄 Mudança é para o usuário atual, recarregando permissões...');
             loadPermissions(); // Recarregar permissões quando houver mudanças
-          } else {
-            console.log('🔄 Mudança é para outro usuário, ignorando...');
           }
         }
       )
@@ -171,7 +148,7 @@ export function usePermissions() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, loadPermissions]);
+  }, [user?.id]); // Removido loadPermissions da dependência para evitar loop
 
   return {
     permissions,
@@ -193,10 +170,6 @@ export function usePermissionManagement() {
 
   // Verificar se é ADM
   const isAdmin = user?.email === 'ramonflora2@gmail.com';
-  
-  // Debug: verificar dados do usuário
-  console.log('🔍 usePermissions - user:', user);
-  console.log('🔍 usePermissions - isAdmin:', isAdmin);
 
   // Carregar todas as permissões e gerentes
   const loadAllData = useCallback(async () => {
@@ -314,13 +287,7 @@ export function usePermissionManagement() {
     if (isAdmin) {
       loadAllData();
     }
-  }, [isAdmin, loadAllData]);
-
-  console.log('🔍 usePermissionManagement - Exportando funções:', {
-    allPermissions: typeof allPermissions,
-    managers: typeof managers,
-    updatePermission: typeof updatePermission
-  });
+  }, [isAdmin]); // Removido loadAllData da dependência para evitar loop
 
   return {
     allPermissions,

@@ -30,23 +30,6 @@ export default function Settings() {
   // Verificar se o usuário é ADM
   const isAdmin = user?.email === 'ramonflora2@gmail.com';
   
-  console.log('🔍 Settings - Funções recebidas:', {
-    hasPermission: typeof hasPermission,
-    loadPermissions: typeof loadPermissions,
-    testUserPermission: typeof testUserPermission
-  });
-  
-  // Debug das permissões
-  console.log('🔍 Settings - Testando permissões:', {
-    isAdmin,
-    user: user?.email,
-    'access_settings_geral': hasPermission('access_settings_geral'),
-    'access_settings_email': hasPermission('access_settings_email'),
-    'access_settings_webhook': hasPermission('access_settings_webhook'),
-    'access_settings_limpeza': hasPermission('access_settings_limpeza'),
-    'access_settings_permissoes': hasPermission('access_settings_permissoes'),
-    'access_cadastros': hasPermission('access_cadastros')
-  });
   
   const [emailInput, setEmailInput] = useState("");
 
