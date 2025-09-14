@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug User ID</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Debug User ID</h1>
+    <div id="output"></div>
+    
+    <script>
+        const SUPABASE_URL = 'https://dplfodkrsaffzljmteub.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbGZvZGtyc2FmZnpsam10ZXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQ4NjQ2NzQsImV4cCI6MjA0MDQ0MDY3NH0.8QZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQ';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        async function debugUser() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Verificar sessão atual
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    output.innerHTML += `<p>❌ Erro na sessão: ${sessionError.message}</p>`;
+                    return;
+                }
+                
+                if (!session) {
+                    output.innerHTML += `<p>⚠️ Nenhuma sessão ativa</p>`;
+                    return;
+                }
+                
+                output.innerHTML += `<p>✅ Sessão encontrada</p>`;
+                output.innerHTML += `<p>👤 User ID: ${session.user.id}</p>`;
+                output.innerHTML += `<p>📧 Email: ${session.user.email}</p>`;
+                output.innerHTML += `<p>🔑 Access Token: ${session.access_token.substring(0, 20)}...</p>`;
+                
+                // Verificar se o usuário existe no banco
+                const { data: userData, error: userError } = await supabase
+                    .from('profiles')
+                    .select('id, nome, email, role')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                if (userError) {
+                    output.innerHTML += `<p>❌ Erro ao buscar perfil: ${userError.message}</p>`;
+                } else if (userData) {
+                    output.innerHTML += `<p>✅ Perfil encontrado: ${userData.nome} (${userData.role})</p>`;
+                } else {
+                    output.innerHTML += `<p>⚠️ Perfil não encontrado</p>`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += `<p>❌ Erro: ${error.message}</p>`;
+            }
+        }
+        
+        debugUser();
+    </script>
+</body>
+</html>
