@@ -778,10 +778,30 @@ function ManagerForm({
     nome: manager?.nome || "",
     email: manager?.usuario || "", // Mudança: usuario -> email
     senha: manager?.senha || "",
-    telefone: manager?.telefone || "",
+    telefone: manager?.telefone || "", // Já vem limpo do banco
     tipoAcesso: manager?.tipoAcesso || "qualquer_ip",
     ipPermitido: manager?.ipPermitido || "",
   });
+
+  // Função para formatar telefone com máscara
+  const formatPhone = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica máscara (11) 99999-9999
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
+
+  // Função para limpar telefone (apenas números)
+  const cleanPhone = (value: string) => {
+    return value.replace(/\D/g, '');
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -875,12 +895,17 @@ function ManagerForm({
         <Label>Telefone</Label>
         <Input
           type="tel"
-          value={formData.telefone || ""}
-          onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
-          placeholder="Ex: (11) 99999-9999"
+          value={formatPhone(formData.telefone || "")}
+          onChange={(e) => {
+            const formatted = formatPhone(e.target.value);
+            const cleaned = cleanPhone(e.target.value);
+            setFormData(prev => ({ ...prev, telefone: cleaned }));
+          }}
+          placeholder="(11) 99999-9999"
+          maxLength={15}
         />
         <p className="text-xs text-muted-foreground">
-          Telefone para contato (opcional)
+          Telefone para contato (opcional) - Apenas números serão salvos
         </p>
       </div>
       

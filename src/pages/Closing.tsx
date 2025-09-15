@@ -381,21 +381,15 @@ export default function Closing() {
         .replace('{gerente_noturno}', nightManager)
         .replace(/\n/g, '<br>'); // Converter quebras de linha para HTML
 
-      // Buscar telefones dos gerentes selecionados
-      const morningManagerData = managers.find(m => m.nome === morningManager);
-      const nightManagerData = managers.find(m => m.nome === nightManager);
+      // Buscar telefone do gerente que está fazendo o fechamento (usuário logado)
+      const closingManagerData = managers.find(m => m.usuario === user?.email);
       
-      // Debug dos telefones
-      console.log('🔍 DEBUG - Gerentes selecionados:', {
-        morningManager,
-        nightManager,
-        morningManagerData: morningManagerData ? {
-          nome: morningManagerData.nome,
-          telefone: morningManagerData.telefone
-        } : null,
-        nightManagerData: nightManagerData ? {
-          nome: nightManagerData.nome,
-          telefone: nightManagerData.telefone
+      // Debug do telefone do gerente que está fazendo o fechamento
+      console.log('🔍 DEBUG - Gerente que está fazendo o fechamento:', {
+        userEmail: user?.email,
+        closingManagerData: closingManagerData ? {
+          nome: closingManagerData.nome,
+          telefone: closingManagerData.telefone
         } : null
       });
       
@@ -404,9 +398,9 @@ export default function Closing() {
         Data_relatorio: formatDateBR(reportDate),
         Valor_total_de_comps: formatCurrency(closingSummary.totalValue),
         Gerente_diurno: morningManager,
-        Gerente_diurno_telefone: morningManagerData?.telefone || "",
+        Gerente_diurno_telefone: closingManagerData?.telefone || "",
         Gerente_noturno: nightManager,
-        Gerente_noturno_telefone: nightManagerData?.telefone || "",
+        Gerente_noturno_telefone: closingManagerData?.telefone || "",
         ...compTypePercentages,
         ...emailFields,
         Texto_padrao_email: textoFinal
@@ -417,7 +411,8 @@ export default function Closing() {
         Gerente_diurno: generalData.Gerente_diurno,
         Gerente_diurno_telefone: generalData.Gerente_diurno_telefone,
         Gerente_noturno: generalData.Gerente_noturno,
-        Gerente_noturno_telefone: generalData.Gerente_noturno_telefone
+        Gerente_noturno_telefone: generalData.Gerente_noturno_telefone,
+        Telefone_do_gerente_que_fechou: closingManagerData?.telefone || "Não encontrado"
       });
 
       // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK
