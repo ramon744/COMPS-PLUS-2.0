@@ -143,6 +143,7 @@ export default function Management() {
         const updateData: Partial<Manager> = {
           nome: managerData.nome,
           usuario: managerData.email, // Mudança: email -> usuario
+          telefone: managerData.telefone,
           tipoAcesso: managerData.tipoAcesso,
           ipPermitido: managerData.ipPermitido,
         };
@@ -172,6 +173,7 @@ export default function Management() {
           nome: managerData.nome || "",
           usuario: managerData.email || "", // Mudança: email -> usuario
           senha: managerData.senha || "",
+          telefone: managerData.telefone || "",
           tipoAcesso: managerData.tipoAcesso || "qualquer_ip",
           ipPermitido: managerData.ipPermitido || "",
           ativo: true,
@@ -758,6 +760,7 @@ interface ManagerFormData {
   nome: string;
   email: string;
   senha: string;
+  telefone?: string;
   tipoAcesso: "qualquer_ip" | "ip_especifico";
   ipPermitido?: string;
 }
@@ -775,6 +778,7 @@ function ManagerForm({
     nome: manager?.nome || "",
     email: manager?.usuario || "", // Mudança: usuario -> email
     senha: manager?.senha || "",
+    telefone: manager?.telefone || "",
     tipoAcesso: manager?.tipoAcesso || "qualquer_ip",
     ipPermitido: manager?.ipPermitido || "",
   });
@@ -866,6 +870,20 @@ function ManagerForm({
           </p>
         )}
       </div>
+      
+      <div className="space-y-2">
+        <Label>Telefone</Label>
+        <Input
+          type="tel"
+          value={formData.telefone || ""}
+          onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
+          placeholder="Ex: (11) 99999-9999"
+        />
+        <p className="text-xs text-muted-foreground">
+          Telefone para contato (opcional)
+        </p>
+      </div>
+      
       <div className="space-y-2">
         <Label>Tipo de Acesso *</Label>
         <Select

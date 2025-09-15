@@ -13,6 +13,7 @@ export interface Manager {
   nome: string;
   usuario: string;
   senha: string;
+  telefone?: string;
   tipoAcesso: "qualquer_ip" | "ip_especifico";
   ipPermitido?: string;
   ativo: boolean;

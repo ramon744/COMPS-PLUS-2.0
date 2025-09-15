@@ -252,6 +252,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         nome: item.nome,
         usuario: item.usuario,
         senha: item.senha,
+        telefone: item.telefone,
         tipoAcesso: item.tipo_acesso as "qualquer_ip" | "ip_especifico",
         ipPermitido: item.ip_permitido,
         ativo: item.ativo,
@@ -476,6 +477,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
           nome: managerData.nome,
           usuario: managerData.usuario,
           senha: managerData.senha,
+          telefone: managerData.telefone,
           tipo_acesso: managerData.tipoAcesso,
           ip_permitido: managerData.ipPermitido,
           ativo: managerData.ativo
@@ -490,6 +492,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         usuario: data.usuario,
         senha: data.senha,
+        telefone: data.telefone,
         tipoAcesso: data.tipo_acesso as "qualquer_ip" | "ip_especifico",
         ipPermitido: data.ip_permitido,
         ativo: data.ativo,
@@ -530,6 +533,7 @@ export function RegistryProvider({ children }: { children: ReactNode }) {
           nome: updatedData.nome,
           usuario: updatedData.usuario,
           senha: updatedData.senha,
+          telefone: updatedData.telefone,
           tipo_acesso: updatedData.tipoAcesso,
           ip_permitido: updatedData.ipPermitido,
           ativo: updatedData.ativo

@@ -381,16 +381,44 @@ export default function Closing() {
         .replace('{gerente_noturno}', nightManager)
         .replace(/\n/g, '<br>'); // Converter quebras de linha para HTML
 
+      // Buscar telefones dos gerentes selecionados
+      const morningManagerData = managers.find(m => m.nome === morningManager);
+      const nightManagerData = managers.find(m => m.nome === nightManager);
+      
+      // Debug dos telefones
+      console.log('🔍 DEBUG - Gerentes selecionados:', {
+        morningManager,
+        nightManager,
+        morningManagerData: morningManagerData ? {
+          nome: morningManagerData.nome,
+          telefone: morningManagerData.telefone
+        } : null,
+        nightManagerData: nightManagerData ? {
+          nome: nightManagerData.nome,
+          telefone: nightManagerData.telefone
+        } : null
+      });
+      
       const generalData = {
         acao: "dados relatorio",
         Data_relatorio: formatDateBR(reportDate),
         Valor_total_de_comps: formatCurrency(closingSummary.totalValue),
         Gerente_diurno: morningManager,
+        Gerente_diurno_telefone: morningManagerData?.telefone || "",
         Gerente_noturno: nightManager,
+        Gerente_noturno_telefone: nightManagerData?.telefone || "",
         ...compTypePercentages,
         ...emailFields,
         Texto_padrao_email: textoFinal
       };
+      
+      // Debug dos dados finais
+      console.log('🔍 DEBUG - Dados do fechamento com telefones:', {
+        Gerente_diurno: generalData.Gerente_diurno,
+        Gerente_diurno_telefone: generalData.Gerente_diurno_telefone,
+        Gerente_noturno: generalData.Gerente_noturno,
+        Gerente_noturno_telefone: generalData.Gerente_noturno_telefone
+      });
 
       // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK
       let closingId = null;
