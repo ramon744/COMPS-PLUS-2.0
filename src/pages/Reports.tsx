@@ -36,6 +36,11 @@ import { ManagerRankingChart } from "@/components/charts/ManagerRankingChart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOperationalDay } from "@/hooks/useOperationalDay";
 import { useRegistry } from "@/contexts/RegistryContext";
+import { exportToExcel } from "@/utils/excelExport";
+import { exportToPDF, generatePDFFilename } from "@/utils/pdfExport";
+import { Comp, CompType, Waiter } from "@/types";
+import PDFReport from "@/components/PDFReport";
+import { useRef } from "react";
 
 export default function Reports() {
   const { 
@@ -44,11 +49,15 @@ export default function Reports() {
     getManagerRanking, 
     getManagerCompsData, 
     getCurrentManagerStats,
-    formatCurrency 
+    formatCurrency,
+    comps,
+    compTypes,
+    waiters,
+    managerProfiles
   } = useReports();
   const { user } = useAuth();
   const { currentOperationalDay } = useOperationalDay();
-  const { compTypes, isLoading: registryLoading } = useRegistry();
+  const { isLoading: registryLoading } = useRegistry();
   
   const [dateRange, setDateRange] = useState({
     start: currentOperationalDay,
@@ -57,6 +66,9 @@ export default function Reports() {
   const [reportType, setReportType] = useState("diario");
   const [selectedWaiter, setSelectedWaiter] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  
+  // Referência para o componente PDF
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   // Função para calcular datas baseadas no tipo de relatório
   const calculateDateRange = (type: string) => {
@@ -114,9 +126,42 @@ export default function Reports() {
   const totalQuantity = reportData.reduce((sum, item) => sum + item.quantidade, 0);
   const averageValue = totalQuantity > 0 ? totalValue / totalQuantity : 0;
 
-  const exportReport = (format: "pdf" | "csv") => {
-    console.log(`Exportando relatório em ${format.toUpperCase()}`);
-    // Implementar exportação
+  const exportReport = async (format: "pdf" | "csv" | "excel") => {
+    if (format === "excel") {
+      try {
+        // Converter os dados para o formato esperado pela função de exportação
+        const exportData = {
+          comps: comps,
+          compTypes: compTypes as CompType[],
+          waiters: waiters as Waiter[],
+          managers: managerProfiles.map(manager => ({
+            id: manager.id,
+            nome: manager.nome,
+            email: manager.email
+          })),
+          filters,
+          formatCurrency
+        };
+        
+        exportToExcel(exportData);
+      } catch (error) {
+        console.error('Erro ao exportar Excel:', error);
+      }
+    } else if (format === "pdf") {
+      try {
+        if (pdfRef.current) {
+          const filename = generatePDFFilename(filters);
+          await exportToPDF(pdfRef.current, filename);
+        } else {
+          console.error('Referência do PDF não encontrada');
+        }
+      } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+      }
+    } else {
+      console.log(`Exportando relatório em ${format.toUpperCase()}`);
+      // Implementar exportação CSV
+    }
   };
 
   if (registryLoading) {
@@ -366,7 +411,14 @@ export default function Reports() {
                   Exportar Relatórios
                 </h3>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 max-w-md mx-auto sm:max-w-none sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 max-w-md mx-auto sm:max-w-none sm:grid-cols-3">
+                    <Button 
+                      onClick={() => exportReport("excel")} 
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-button h-14 text-base font-semibold w-full text-white"
+                    >
+                      <Download className="w-5 h-5 mr-3" />
+                      Exportar Excel
+                    </Button>
                     <Button 
                       onClick={() => exportReport("pdf")} 
                       className="bg-gradient-primary shadow-button h-14 text-base font-semibold w-full"
@@ -384,14 +436,36 @@ export default function Reports() {
                     </Button>
                   </div>
                   <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground text-center sm:text-left">
+                    <p className="text-sm text-muted-foreground text-center sm:text-left mb-2">
                       Os relatórios incluem dados de todos os períodos selecionados nos filtros acima.
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center sm:text-left">
+                      <strong>Excel:</strong> Arquivo completo com múltiplas abas (Resumo, Funcionários, Gerentes, Detalhado, Por Tipo) • 
+                      <strong>PDF:</strong> Relatório visual para impressão • 
+                      <strong>CSV:</strong> Dados em formato de planilha simples
                     </p>
                   </div>
                 </div>
               </Card>
             </TabsContent>
           </Tabs>
+        </div>
+        
+        {/* Componente PDF oculto para exportação */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <PDFReport
+            ref={pdfRef}
+            reportData={reportData}
+            typeData={typeData}
+            waiterRanking={waiterRanking}
+            managerRanking={managerRanking}
+            filters={filters}
+            totalValue={totalValue}
+            totalQuantity={totalQuantity}
+            averageValue={averageValue}
+            formatCurrency={formatCurrency}
+            compTypes={compTypes}
+          />
         </div>
       </Layout>
     </div>

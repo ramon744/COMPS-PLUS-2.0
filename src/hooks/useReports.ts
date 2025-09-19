@@ -227,5 +227,9 @@ export function useReports() {
     getCurrentManagerStats,
     formatCurrency,
     filterComps,
+    comps,
+    compTypes,
+    waiters,
+    managerProfiles,
   };
 }
