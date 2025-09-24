@@ -27,7 +27,7 @@ import {
   LineChart,
   Line
 } from "recharts";
-import { Download, Calendar, Filter, TrendingUp, DollarSign, Crown, Users, Target } from "lucide-react";
+import { Download, Calendar, Filter, TrendingUp, DollarSign, Crown, Users, Target, AlertTriangle } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useReports } from "@/hooks/useReports";
@@ -36,10 +36,12 @@ import { ManagerRankingChart } from "@/components/charts/ManagerRankingChart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOperationalDay } from "@/hooks/useOperationalDay";
 import { useRegistry } from "@/contexts/RegistryContext";
-import { exportToExcel } from "@/utils/excelExport";
+import { usePerdaServico } from "@/contexts/PerdaServicoContext";
+import { exportToExcel, exportToExcelFormatoImagem } from "@/utils/excelExport";
 import { exportToPDF, generatePDFFilename } from "@/utils/pdfExport";
 import { Comp, CompType, Waiter } from "@/types";
 import PDFReport from "@/components/PDFReport";
+import { SpreadsheetViewer } from '@/components/SpreadsheetViewer';
 import { useRef } from "react";
 
 export default function Reports() {
@@ -58,6 +60,7 @@ export default function Reports() {
   const { user } = useAuth();
   const { currentOperationalDay } = useOperationalDay();
   const { isLoading: registryLoading } = useRegistry();
+  const { perdas: allPerdas, getPerdasByDateRange, isLoading: perdasLoading } = usePerdaServico();
   
   const [dateRange, setDateRange] = useState({
     start: currentOperationalDay,
@@ -122,11 +125,46 @@ export default function Reports() {
   const managerCompsData = getManagerCompsData(filters);
   const currentManagerStats = getCurrentManagerStats(filters);
 
+  // Função para calcular o dia operacional baseado na data de criação (mesma lógica da aba Perdas de Serviço)
+  const calculateOperationalDay = (createdAt: string): string => {
+    const date = new Date(createdAt);
+    
+    // Se foi criado antes das 5h, pertence ao dia operacional anterior
+    if (date.getHours() < 5) {
+      const previousDay = new Date(date);
+      previousDay.setDate(previousDay.getDate() - 1);
+      const year = previousDay.getFullYear();
+      const month = String(previousDay.getMonth() + 1).padStart(2, '0');
+      const day = String(previousDay.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Formato YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Filtrar perdas de serviço pelos mesmos filtros que os COMPs
+  const perdas = allPerdas.filter(perda => {
+    // Calcular o dia operacional da perda
+    const perdaDiaOperacional = calculateOperationalDay(perda.created_at);
+    
+    // Verificar se a perda pertence ao período selecionado
+    const isInDateRange = perdaDiaOperacional >= dateRange.start && perdaDiaOperacional <= dateRange.end;
+    
+    // Filtro por atendente (se selecionado)
+    const matchesWaiter = selectedWaiter === "all" || perda.atendente_nome === selectedWaiter;
+    
+    return isInDateRange && matchesWaiter;
+  });
+
   const totalValue = reportData.reduce((sum, item) => sum + item.valor, 0);
   const totalQuantity = reportData.reduce((sum, item) => sum + item.quantidade, 0);
   const averageValue = totalQuantity > 0 ? totalValue / totalQuantity : 0;
 
-  const exportReport = async (format: "pdf" | "csv" | "excel") => {
+  const exportReport = async (format: "pdf" | "csv" | "excel" | "excel-formato") => {
     if (format === "excel") {
       try {
         // Converter os dados para o formato esperado pela função de exportação
@@ -146,6 +184,26 @@ export default function Reports() {
         exportToExcel(exportData);
       } catch (error) {
         console.error('Erro ao exportar Excel:', error);
+      }
+    } else if (format === "excel-formato") {
+      try {
+        // Exportar no formato da imagem
+        const exportData = {
+          comps: comps,
+          compTypes: compTypes as CompType[],
+          waiters: waiters as Waiter[],
+          managers: managerProfiles.map(manager => ({
+            id: manager.id,
+            nome: manager.nome,
+            email: manager.email
+          })),
+          filters,
+          formatCurrency
+        };
+        
+        exportToExcelFormatoImagem(exportData);
+      } catch (error) {
+        console.error('Erro ao exportar Excel formato imagem:', error);
       }
     } else if (format === "pdf") {
       try {
@@ -304,7 +362,7 @@ export default function Reports() {
 
           {/* Tabs para diferentes relatórios */}
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full mb-6 h-auto p-1">
+            <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full mb-6 h-auto p-1">
               <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 py-3 sm:px-4">
                 Visão Geral
               </TabsTrigger>
@@ -313,6 +371,9 @@ export default function Reports() {
               </TabsTrigger>
               <TabsTrigger value="managers" className="text-xs sm:text-sm px-2 py-3 sm:px-4">
                 Gerentes
+              </TabsTrigger>
+              <TabsTrigger value="perdas" className="text-xs sm:text-sm px-2 py-3 sm:px-4">
+                Perdas de Serviço
               </TabsTrigger>
               <TabsTrigger value="export" className="text-xs sm:text-sm px-2 py-3 sm:px-4">
                 Exportar
@@ -405,19 +466,340 @@ export default function Reports() {
               <ManagerRankingChart data={managerRanking} formatCurrency={formatCurrency} />
             </TabsContent>
 
+            <TabsContent value="perdas" className="space-y-4 sm:space-y-6">
+              {perdasLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : perdas.length === 0 ? (
+                <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
+                  <div className="text-center py-8">
+                    <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Nenhuma perda de serviço registrada no período</p>
+                  </div>
+                </Card>
+              ) : (
+                <>
+                  {/* Cards de Estatísticas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="p-4 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-100 rounded-lg">
+                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total de Perdas</p>
+                          <p className="text-2xl font-bold text-red-600">{perdas.length}</p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <Users className="h-5 w-5 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Atendentes Afetados</p>
+                          <p className="text-2xl font-bold text-orange-600">
+                            {new Set(perdas.map(p => p.atendente_nome)).size}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Target className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Mesas Afetadas</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {new Set(perdas.map(p => p.numero_mesa)).size}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-4 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <TrendingUp className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Média por Dia</p>
+                          <p className="text-2xl font-bold text-purple-600">
+                            {reportType === 'diario' ? perdas.length : Math.round(perdas.length / Math.max(1, (new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 60 * 60 * 24) + 1))}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Gráfico de Perdas por Atendente */}
+                  <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Users className="h-5 w-5 text-orange-600" />
+                      <h3 className="text-base sm:text-lg font-semibold">Perdas por Atendente</h3>
+                    </div>
+                    <div className="h-64 sm:h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                          data={(() => {
+                            const perdasPorAtendente = perdas.reduce((acc, perda) => {
+                              acc[perda.atendente_nome] = (acc[perda.atendente_nome] || 0) + 1;
+                              return acc;
+                            }, {} as Record<string, number>);
+                            
+                            return Object.entries(perdasPorAtendente)
+                              .map(([nome, quantidade]) => ({ nome, quantidade }))
+                              .sort((a, b) => b.quantidade - a.quantidade)
+                              .slice(0, 10); // Top 10
+                          })()
+                          }
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="nome" 
+                            tick={{ fontSize: 12 }}
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                          />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip 
+                            formatter={(value: number) => [value, "Perdas"]}
+                            labelFormatter={(label) => `Atendente: ${label}`}
+                          />
+                          <Bar 
+                            dataKey="quantidade" 
+                            fill="hsl(var(--destructive))"
+                            radius={[4, 4, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* Gráfico de Perdas por Período */}
+                  {reportType !== 'diario' && (
+                    <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
+                      <div className="flex items-center gap-2 mb-4">
+                        <TrendingUp className="h-5 w-5 text-purple-600" />
+                        <h3 className="text-base sm:text-lg font-semibold">Evolução das Perdas</h3>
+                      </div>
+                      <div className="h-64 sm:h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart 
+                            data={(() => {
+                              const perdasPorDia = perdas.reduce((acc, perda) => {
+                                const dia = format(new Date(perda.created_at), 'dd/MM', { locale: ptBR });
+                                acc[dia] = (acc[dia] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>);
+                              
+                              return Object.entries(perdasPorDia)
+                                .map(([dia, quantidade]) => ({ dia, quantidade }))
+                                .sort((a, b) => a.dia.localeCompare(b.dia));
+                            })()}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="dia" 
+                              tick={{ fontSize: 12 }}
+                            />
+                            <YAxis tick={{ fontSize: 12 }} />
+                            <Tooltip 
+                              formatter={(value: number) => [value, "Perdas"]}
+                              labelFormatter={(label) => `Dia: ${label}`}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="quantidade" 
+                              stroke="hsl(var(--destructive))" 
+                              strokeWidth={3}
+                              dot={{ fill: "hsl(var(--destructive))", strokeWidth: 2, r: 4 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Gráfico de Pizza - Principais Motivos */}
+                  <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
+                    <div className="flex items-center gap-2 mb-4">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <h3 className="text-base sm:text-lg font-semibold">Principais Motivos</h3>
+                    </div>
+                    <div className="h-64 sm:h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={(() => {
+                              // Agrupar motivos similares por palavras-chave
+                              const categorizarMotivo = (motivo: string) => {
+                                const motivoLower = motivo.toLowerCase();
+                                if (motivoLower.includes('demora') || motivoLower.includes('demorou') || motivoLower.includes('tempo')) {
+                                  return 'Demora no Atendimento';
+                                } else if (motivoLower.includes('erro') || motivoLower.includes('errado') || motivoLower.includes('pedido')) {
+                                  return 'Erro no Pedido';
+                                } else if (motivoLower.includes('cliente') || motivoLower.includes('reclamação') || motivoLower.includes('insatisfeito')) {
+                                  return 'Reclamação do Cliente';
+                                } else if (motivoLower.includes('mesa') || motivoLower.includes('abandonada') || motivoLower.includes('saiu')) {
+                                  return 'Mesa Abandonada';
+                                } else if (motivoLower.includes('qualidade') || motivoLower.includes('comida') || motivoLower.includes('bebida')) {
+                                  return 'Qualidade do Produto';
+                                } else {
+                                  return 'Outros';
+                                }
+                              };
+
+                              const motivosPorCategoria = perdas.reduce((acc, perda) => {
+                                const categoria = categorizarMotivo(perda.motivo);
+                                acc[categoria] = (acc[categoria] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>);
+                              
+                              const cores = [
+                                'hsl(var(--destructive))',
+                                'hsl(var(--warning))',
+                                'hsl(var(--primary))',
+                                'hsl(var(--secondary))',
+                                'hsl(var(--accent))',
+                                'hsl(var(--muted))'
+                              ];
+                              
+                              return Object.entries(motivosPorCategoria)
+                                .map(([categoria, quantidade], index) => ({ 
+                                  categoria, 
+                                  quantidade,
+                                  fill: cores[index % cores.length]
+                                }))
+                                .sort((a, b) => b.quantidade - a.quantidade);
+                            })()}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ categoria, quantidade, percent }) => 
+                              `${categoria}: ${quantidade} (${(percent * 100).toFixed(0)}%)`
+                            }
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="quantidade"
+                          >
+                            {(() => {
+                              const motivosPorCategoria = perdas.reduce((acc, perda) => {
+                                const categorizarMotivo = (motivo: string) => {
+                                  const motivoLower = motivo.toLowerCase();
+                                  if (motivoLower.includes('demora') || motivoLower.includes('demorou') || motivoLower.includes('tempo')) {
+                                    return 'Demora no Atendimento';
+                                  } else if (motivoLower.includes('erro') || motivoLower.includes('errado') || motivoLower.includes('pedido')) {
+                                    return 'Erro no Pedido';
+                                  } else if (motivoLower.includes('cliente') || motivoLower.includes('reclamação') || motivoLower.includes('insatisfeito')) {
+                                    return 'Reclamação do Cliente';
+                                  } else if (motivoLower.includes('mesa') || motivoLower.includes('abandonada') || motivoLower.includes('saiu')) {
+                                    return 'Mesa Abandonada';
+                                  } else if (motivoLower.includes('qualidade') || motivoLower.includes('comida') || motivoLower.includes('bebida')) {
+                                    return 'Qualidade do Produto';
+                                  } else {
+                                    return 'Outros';
+                                  }
+                                };
+                                const categoria = categorizarMotivo(perda.motivo);
+                                acc[categoria] = (acc[categoria] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>);
+                              
+                              const cores = [
+                                'hsl(var(--destructive))',
+                                'hsl(var(--warning))',
+                                'hsl(var(--primary))',
+                                'hsl(var(--secondary))',
+                                'hsl(var(--accent))',
+                                'hsl(var(--muted))'
+                              ];
+                              
+                              return Object.entries(motivosPorCategoria)
+                                .map(([categoria, quantidade], index) => ({ 
+                                  categoria, 
+                                  quantidade,
+                                  fill: cores[index % cores.length]
+                                }))
+                                .sort((a, b) => b.quantidade - a.quantidade)
+                                .map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ));
+                            })()}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value: number) => [value, "Perdas"]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* Lista Detalhada de Perdas */}
+                  <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
+                    <div className="flex items-center gap-2 mb-4">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <h3 className="text-base sm:text-lg font-semibold">Registros Detalhados</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {perdas.map((perda) => (
+                        <div key={perda.id} className="border rounded-lg p-4 bg-card">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  Mesa {perda.numero_mesa}
+                                </Badge>
+                                <span className="font-medium">{perda.atendente_nome}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{perda.motivo}</p>
+                            </div>
+                            <div className="text-right text-xs text-muted-foreground">
+                              {format(new Date(perda.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </>
+              )}
+            </TabsContent>
+
             <TabsContent value="export" className="space-y-4 sm:space-y-6">
+              {/* Visualização da Planilha em Tempo Real */}
+              <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
+                <SpreadsheetViewer />
+              </Card>
+
+              {/* Botões de Exportação */}
               <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
                 <h3 className="text-base sm:text-lg font-semibold mb-4 text-center sm:text-left">
                   Exportar Relatórios
                 </h3>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 max-w-md mx-auto sm:max-w-none sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 max-w-md mx-auto sm:max-w-none sm:grid-cols-2 lg:grid-cols-4">
                     <Button 
                       onClick={() => exportReport("excel")} 
                       className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-button h-14 text-base font-semibold w-full text-white"
                     >
                       <Download className="w-5 h-5 mr-3" />
-                      Exportar Excel
+                      Excel Completo
+                    </Button>
+                    <Button 
+                      onClick={() => exportReport("excel-formato")} 
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-button h-14 text-base font-semibold w-full text-white"
+                    >
+                      <Download className="w-5 h-5 mr-3" />
+                      Excel Formato
                     </Button>
                     <Button 
                       onClick={() => exportReport("pdf")} 
@@ -440,7 +822,8 @@ export default function Reports() {
                       Os relatórios incluem dados de todos os períodos selecionados nos filtros acima.
                     </p>
                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                      <strong>Excel:</strong> Arquivo completo com múltiplas abas (Resumo, Funcionários, Gerentes, Detalhado, Por Tipo) • 
+                      <strong>Excel Completo:</strong> Arquivo com múltiplas abas (Resumo, Funcionários, Gerentes, Detalhado, Por Tipo) • 
+                      <strong>Excel Formato:</strong> Planilha no formato da imagem com percentuais e justificativas • 
                       <strong>PDF:</strong> Relatório visual para impressão • 
                       <strong>CSV:</strong> Dados em formato de planilha simples
                     </p>

@@ -1,225 +1,234 @@
-# 🍽️ Comps Plus 54 - Sistema de Gestão de COMPS
+# Comps Manager - Sistema de Gerenciamento de Comps
 
-Sistema completo para gestão de COMPS (complementos) de funcionários em restaurantes, com relatórios automatizados e notificações em tempo real.
+Sistema para substituir o n8n e fazer integração direta com planilha Google Sheets para gerenciamento de comps (itens cortesia) do restaurante.
 
 ## 🚀 Funcionalidades
 
-### 📊 **Gestão de COMPS**
-- Cadastro e edição de COMPS por funcionário
-- Categorização por tipo (2, 4, 8, 10, 12, 13)
-- Validação de valores e limites
-- Histórico completo de transações
+- ✅ **Integração direta** com Google Sheets (sem n8n)
+- ✅ **Atualização automática** de cabeçalho (data, gerentes, porcentagens)
+- ✅ **Cálculo automático** de porcentagens por tipo de comp
+- ✅ **Adição de waiters** com todos os dados necessários
+- ✅ **Limpeza automática** de dados antigos
+- ✅ **Formatação brasileira** de datas (DD/MM/AAAA)
+- ✅ **Tratamento de erros** robusto
 
-### 👥 **Gestão de Funcionários**
-- Cadastro de garçons e gerentes
-- Controle de status ativo/inativo
-- Ranking de performance
-- Relatórios individuais
+## 📋 Estrutura da Planilha
 
-### 📈 **Relatórios e Analytics**
-- Relatórios diários automáticos
-- Gráficos de performance
-- Exportação em PDF e CSV
-- Histórico de fechamentos
+### Cabeçalho (Linhas 1-6)
+- **B1**: Data operacional (DD/MM/AAAA)
+- **E1**: Gerente diurno
+- **D2**: Gerente noturno
+- **C6**: Porcentagem de Comps 2
+- **D6**: Porcentagem de Comps 4
+- **E6**: Porcentagem de Comps 8
+- **F6**: Porcentagem de Comps 11
+- **G6**: Porcentagem de Comps 12
+- **H6**: Porcentagem de Comps 13
 
-### 🔔 **Sistema de Notificações**
-- Notificações em tempo real
-- PDFs de relatórios automáticos
-- Integração com N8N
-- Visualização inline de documentos
+### Dados dos Waiters (A partir da linha 8)
+- **A8+**: Nome do waiter
+- **B8+**: Total de comps
+- **C8+**: Comps 2
+- **D8+**: Comps 4
+- **E8+**: Comps 8
+- **F8+**: Comps 11
+- **G8+**: Comps 12
+- **H8+**: Comps 13
+- **I8+**: Justificativas (separadas por /)
 
-### 🔐 **Segurança**
-- Autenticação via Supabase
-- Controle de acesso por gerente
-- Políticas RLS (Row Level Security)
-- Logout automático por inatividade
+## 🛠️ Instalação
 
-## 🛠️ Tecnologias
-
-- **Frontend**: React 18 + TypeScript + Vite
-- **UI**: Radix UI + Tailwind CSS
-- **Backend**: Supabase (PostgreSQL + Auth + Storage)
-- **Notificações**: Supabase Realtime
-- **Deploy**: Vercel
-- **Automação**: N8N (webhooks)
-
-## 📦 Instalação
-
-### Pré-requisitos
-- Node.js 18+
-- npm ou yarn
-- Conta no Supabase
-
-### 1. Clone o repositório
-   ```bash
-git clone https://github.com/seu-usuario/comps-plus-54.git
-   cd comps-plus-54
-   ```
-
-### 2. Instale as dependências
+1. **Instalar dependências** (se necessário):
    ```bash
    npm install
    ```
 
-### 3. Configure as variáveis de ambiente
-```bash
-cp env.example .env.local
+2. **Configurar URL da planilha** no arquivo `TXT`:
+```typescript
+export const sheets = new SheetsApi({
+  baseUrl: 'SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI',
+  timeoutMs: 15000,
+});
 ```
 
-Edite o arquivo `.env.local` com suas credenciais:
-```env
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
-VITE_APP_ENV=production
-VITE_APP_VERSION=1.0.0
+## 📖 Como Usar
+
+### Uso Básico
+
+```typescript
+import { compsManager, FechamentoData } from './comps-manager';
+
+// Criar dados do fechamento
+const fechamento: FechamentoData = {
+  dataOperacional: '15/12/2024',
+  gerenteDiurno: 'João Silva',
+  gerenteNoturno: 'Maria Santos',
+  waiters: [
+    {
+      nome: 'Carlos',
+      total: 25,
+      comps2: 5,
+      comps4: 3,
+      comps8: 2,
+      justificativas: 'Cliente VIP/Problema no pedido'
+    },
+    {
+      nome: 'Ana',
+      total: 18,
+      comps2: 2,
+      comps11: 1,
+      comps12: 1,
+      justificativas: 'Aniversário/Reclamação atendida'
+    }
+  ]
+};
+
+// Processar fechamento
+await compsManager.processarFechamento(fechamento);
 ```
 
-### 4. Execute o projeto
-   ```bash
-# Desenvolvimento
-npm run dev
+### Uso com Data Atual
 
-# Build para produção
-   npm run build
+```typescript
+import { compsManager } from './comps-manager';
+
+const hoje = new Date();
+const dataFormatada = hoje.getDate().toString().padStart(2, '0') + '/' + 
+                     (hoje.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                     hoje.getFullYear();
+
+const fechamento = {
+  dataOperacional: dataFormatada,
+  gerenteDiurno: 'Roberto Lima',
+  gerenteNoturno: 'Fernanda Costa',
+  waiters: [
+    // ... seus waiters
+  ]
+};
+
+await compsManager.processarFechamento(fechamento);
 ```
 
-## 🗄️ Configuração do Banco de Dados
+### Consultar Dados Existentes
 
-### 1. Execute as migrações
-```bash
-# No Supabase Dashboard, execute as migrações em ordem:
-supabase/migrations/
-├── 20250129000000_add_global_settings.sql
-├── 20250129000001_migrate_webhook_settings.sql
-├── 20250130000001_create_notifications_table.sql
-├── 20250130000002_fix_notifications_policies.sql
-└── 20250829080000_fix_security_policies.sql
+```typescript
+// Ler todos os dados
+const dados = await compsManager.lerDadosAtuais();
+
+// Ler apenas waiters
+const waiters = await compsManager.lerWaiters();
 ```
 
-### 2. Configure as políticas RLS
-As políticas de segurança estão configuradas nas migrações para garantir que apenas gerentes ativos tenham acesso aos dados.
+## 🔧 API Detalhada
 
-## 🔧 Configuração do N8N
+### CompsManager
 
-### 1. Webhook de Recebimento
-Configure um webhook no N8N para receber dados de fechamento:
-- **URL**: `https://seu-projeto.supabase.co/functions/v1/webhook-pdf`
-- **Método**: POST
-- **Dados**: `closing_id`, `pdf_data` (base64)
+#### `processarFechamento(fechamento: FechamentoData): Promise<void>`
+Processa fechamento completo:
+1. Atualiza cabeçalho (data, gerentes, porcentagens)
+2. Limpa dados antigos dos waiters
+3. Adiciona novos dados dos waiters
 
-### 2. Processamento de PDF
-Após processar o PDF, o N8N deve chamar:
-- **URL**: `https://seu-projeto.supabase.co/rest/v1/rpc/notify_pdf_ready`
-- **Método**: POST
-- **Body**: `{ "p_closing_id": "uuid", "p_pdf_url": "url" }`
+#### `atualizarCabecalho(fechamento: FechamentoData): Promise<void>`
+Atualiza apenas o cabeçalho da planilha.
 
-## 🚀 Deploy na Vercel
+#### `adicionarWaiters(waiters: WaiterData[]): Promise<void>`
+Adiciona dados dos waiters a partir da linha 8.
 
-### 1. Conecte o repositório
-1. Acesse [Vercel Dashboard](https://vercel.com/dashboard)
-2. Importe o repositório do GitHub
-3. Configure as variáveis de ambiente
+#### `limparDadosWaiters(): Promise<void>`
+Limpa dados antigos dos waiters.
 
-### 2. Variáveis de ambiente na Vercel
-```env
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
-VITE_APP_ENV=production
-VITE_APP_VERSION=1.0.0
+#### `lerDadosAtuais(): Promise<any>`
+Lê todos os dados da planilha.
+
+#### `lerWaiters(): Promise<WaiterData[]>`
+Lê apenas os dados dos waiters.
+
+### Interfaces
+
+#### `FechamentoData`
+```typescript
+interface FechamentoData {
+  dataOperacional: string; // DD/MM/AAAA
+  gerenteDiurno: string;
+  gerenteNoturno: string;
+  waiters: WaiterData[];
+}
 ```
 
-### 3. Deploy automático
-O deploy é automático a cada push para a branch `main`.
+#### `WaiterData`
+```typescript
+interface WaiterData {
+  nome: string;
+  total: number;
+  comps2?: number;
+  comps4?: number;
+  comps8?: number;
+  comps11?: number;
+  comps12?: number;
+  comps13?: number;
+  justificativas: string;
+}
+```
 
-## 📱 Uso do Sistema
+## 📊 Exemplos Práticos
 
-### 1. **Login**
-- Acesse a aplicação
-- Faça login com suas credenciais
-- O sistema verifica se você é um gerente ativo
+Execute os exemplos incluídos:
 
-### 2. **Cadastrar COMPS**
-- Vá para a página principal
-- Selecione o funcionário
-- Preencha os dados do COMP
-- Salve a transação
+```typescript
+import { executarExemplos } from './exemplo-uso';
 
-### 3. **Fechamento Diário**
-- Acesse "Fechamento"
-- Preencha os gerentes (manhã/noite)
-- Confirme o fechamento
-- O sistema gera relatório automaticamente
+// Executar todos os exemplos
+await executarExemplos();
+```
 
-### 4. **Visualizar Relatórios**
-- Acesse "Relatórios"
-- Configure filtros de data
-- Visualize gráficos e tabelas
-- Exporte em PDF ou CSV
+Ou execute exemplos individuais:
 
-## 🔒 Segurança
+```typescript
+import { 
+  exemploFechamentoSimples,
+  exemploFechamentoDataAtual,
+  exemploConsultarDados 
+} from './exemplo-uso';
 
-### Políticas Implementadas
-- ✅ Autenticação obrigatória
-- ✅ Verificação de gerente ativo
-- ✅ Políticas RLS no banco
-- ✅ Logout automático por inatividade
-- ✅ Validação de dados no frontend
+await exemploFechamentoSimples();
+await exemploFechamentoDataAtual();
+await exemploConsultarDados();
+```
 
-### Controle de Acesso
-- Apenas gerentes ativos podem acessar o sistema
-- Dados isolados por usuário
-- Sessões seguras com refresh automático
+## ⚠️ Importante
 
-## 🐛 Troubleshooting
+1. **URL da Planilha**: Certifique-se de que a URL do Google Apps Script está correta no arquivo `TXT`.
 
-### Problemas Comuns
+2. **Permissões**: O Google Apps Script deve ter permissões para editar a planilha.
 
-#### 1. **Erro de Login**
-- Verifique se o email está na tabela `managers`
-- Confirme se o gerente está ativo
-- Verifique as credenciais do Supabase
+3. **Formato de Data**: Use sempre o formato brasileiro DD/MM/AAAA.
 
-#### 2. **Notificações não aparecem**
-- Verifique se o Realtime está ativo
-- Confirme se o N8N está chamando a função RPC
-- Verifique os logs do console
+4. **Justificativas**: Separe múltiplas justificativas com "/".
 
-#### 3. **PDF não é gerado**
-- Verifique se o N8N está configurado
-- Confirme se o webhook está funcionando
-- Verifique os logs da Edge Function
+5. **Campos Opcionais**: Os campos de comps específicos (comps2, comps4, etc.) são opcionais.
 
-## 📊 Monitoramento
+## 🐛 Tratamento de Erros
 
-### Logs Importantes
-- Console do navegador para erros de frontend
-- Logs do Supabase para erros de backend
-- Logs do N8N para automação
+O sistema inclui tratamento robusto de erros:
+- Timeout de 15 segundos para requisições
+- Validação de dados antes do envio
+- Logs detalhados para debugging
+- Rollback automático em caso de erro
 
-### Métricas
-- Número de COMPS por dia
-- Performance dos funcionários
-- Tempo de resposta do sistema
+## 🔄 Migração do n8n
 
-## 🤝 Contribuição
+Para migrar do n8n:
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+1. **Pare o n8n** que estava fazendo a integração
+2. **Configure a URL** da planilha no arquivo `TXT`
+3. **Use o CompsManager** no lugar das workflows do n8n
+4. **Teste** com dados de exemplo antes de usar em produção
 
 ## 📞 Suporte
 
-Para suporte técnico ou dúvidas:
-- Abra uma issue no GitHub
-- Entre em contato via email
-- Consulte a documentação do Supabase
-
----
-
-**Desenvolvido com ❤️ para restaurantes que valorizam a gestão eficiente de COMPS**
+Em caso de problemas:
+1. Verifique os logs no console
+2. Confirme se a URL da planilha está correta
+3. Teste com dados simples primeiro
+4. Verifique as permissões do Google Apps Script

@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, User, LogOut, Home, Settings, Users, BarChart3, Send } from "lucide-react";
+import { Menu, User, LogOut, Home, Settings, Users, BarChart3, Send, AlertTriangle } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import {
   DropdownMenu,
@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ActiveManagerGuard } from "./ActiveManagerGuard";
 
 interface LayoutProps {
   children: ReactNode;
@@ -31,8 +30,7 @@ export function Layout({ children, title, showBack, onBack }: LayoutProps) {
   };
 
   return (
-    <ActiveManagerGuard>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-gradient-primary shadow-float sticky top-0 z-50">
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
@@ -55,26 +53,42 @@ export function Layout({ children, title, showBack, onBack }: LayoutProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 sm:w-56">
-                  <DropdownMenuItem onClick={() => navigate("/")} className="h-10 sm:h-11 text-sm sm:text-base">
-                    <Home className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    Dashboard
+                  <DropdownMenuItem asChild className="h-10 sm:h-11 text-sm sm:text-base">
+                    <Link to="/">
+                      <Home className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Dashboard
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/management")} className="h-10 sm:h-11 text-sm sm:text-base">
-                    <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    Cadastros
+                  <DropdownMenuItem asChild className="h-10 sm:h-11 text-sm sm:text-base">
+                    <Link to="/management">
+                      <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Cadastros
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/reports")} className="h-10 sm:h-11 text-sm sm:text-base">
-                    <BarChart3 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    Relatórios
+                  <DropdownMenuItem asChild className="h-10 sm:h-11 text-sm sm:text-base">
+                    <Link to="/reports">
+                      <BarChart3 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Relatórios
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/closing")} className="h-10 sm:h-11 text-sm sm:text-base">
-                    <Send className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    Fechamento
+                  <DropdownMenuItem asChild className="h-10 sm:h-11 text-sm sm:text-base">
+                    <Link to="/closing">
+                      <Send className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Fechamento
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="h-10 sm:h-11 text-sm sm:text-base">
+                    <Link to="/perda-servico">
+                      <AlertTriangle className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Perdas de Serviço
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/settings")} className="h-10 sm:h-11 text-sm sm:text-base">
-                    <Settings className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    Configurações
+                  <DropdownMenuItem asChild className="h-10 sm:h-11 text-sm sm:text-base">
+                    <Link to="/settings">
+                      <Settings className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Configurações
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -105,6 +119,5 @@ export function Layout({ children, title, showBack, onBack }: LayoutProps) {
           {children}
         </main>
       </div>
-    </ActiveManagerGuard>
   );
 }

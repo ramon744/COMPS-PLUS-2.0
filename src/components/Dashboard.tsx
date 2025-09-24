@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, DollarSign, Receipt, Users, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, DollarSign, Receipt, Users, TrendingUp, AlertTriangle } from "lucide-react";
 
 interface DashboardStats {
   totalValue: number;
@@ -68,6 +69,20 @@ export function Dashboard({
             <span className="text-xs sm:text-sm font-medium">Ver COMPs</span>
           </div>
         </Button>
+      </div>
+
+      {/* Perda de Serviço */}
+      <div className="grid grid-cols-1 gap-3 sm:gap-4">
+        <Link 
+          to="/perda-servico"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300"
+          onClick={() => {
+            console.log('🔍 Dashboard: Clicando em Registrar Perda de Serviço');
+          }}
+        >
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          Registrar Perda de Serviço
+        </Link>
       </div>
 
       {/* Stats Overview */}

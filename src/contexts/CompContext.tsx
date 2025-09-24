@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOperationalDay } from '@/hooks/useOperationalDay';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import SpreadsheetManager from '@/utils/spreadsheetManager';
 
 interface CompContextType {
   comps: Comp[];
@@ -14,6 +15,8 @@ interface CompContextType {
   getTodayComps: () => Comp[];
   clearAllComps: () => Promise<void>;
   isLoading: boolean;
+  spreadsheetManager: SpreadsheetManager | null;
+  updateSpreadsheet: (newComp: Comp) => void;
 }
 
 const CompContext = createContext<CompContextType | undefined>(undefined);
@@ -21,8 +24,47 @@ const CompContext = createContext<CompContextType | undefined>(undefined);
 export function CompProvider({ children }: { children: ReactNode }) {
   const [comps, setComps] = useState<Comp[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [spreadsheetManager, setSpreadsheetManager] = useState<SpreadsheetManager | null>(null);
   const { currentOperationalDay } = useOperationalDay();
   const { user } = useAuth();
+
+  // Inicializar gerenciador de planilha quando os dados estiverem carregados
+  useEffect(() => {
+    if (comps.length > 0 && user) {
+      // Carregar dados necessários para a planilha
+      loadSpreadsheetData();
+    }
+  }, [comps, user]);
+
+  const loadSpreadsheetData = async () => {
+    try {
+      // Carregar tipos de COMP, garçons e gerentes
+      const [compTypesRes, waitersRes, managersRes] = await Promise.all([
+        supabase.from('comp_types').select('*').eq('ativo', true),
+        supabase.from('waiters').select('*').eq('ativo', true),
+        supabase.from('profiles').select('*').eq('role', 'manager_day')
+      ]);
+
+      if (compTypesRes.error) throw compTypesRes.error;
+      if (waitersRes.error) throw waitersRes.error;
+      if (managersRes.error) throw managersRes.error;
+
+      const data = {
+        comps,
+        compTypes: compTypesRes.data,
+        waiters: waitersRes.data,
+        managers: managersRes.data,
+        currentDate: currentOperationalDay,
+        gerenteDiurno: 'ADM', // Valor padrão
+        gerenteNoturno: 'ADM'  // Valor padrão
+      };
+
+      const manager = new SpreadsheetManager(data);
+      setSpreadsheetManager(manager);
+    } catch (error) {
+      console.error('Erro ao carregar dados da planilha:', error);
+    }
+  };
 
   // Load data from Supabase when user is authenticated
   useEffect(() => {
@@ -81,6 +123,9 @@ export function CompProvider({ children }: { children: ReactNode }) {
             
             console.log('Adicionando novo COMP via real-time:', newComp.id);
             setComps(prev => [newComp, ...prev]);
+            
+            // Atualizar planilha em tempo real
+            updateSpreadsheet(newComp);
           } else if (payload.eventType === 'UPDATE') {
             console.log('Atualizando COMP via real-time:', payload.new.id);
             setComps(prev => prev.map(comp => 
@@ -270,6 +315,18 @@ export function CompProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Atualizar planilha quando um COMP é criado
+  const updateSpreadsheet = (newComp: Comp) => {
+    if (spreadsheetManager) {
+      try {
+        spreadsheetManager.updateSpreadsheet(newComp);
+        console.log('Planilha atualizada com novo COMP:', newComp.id);
+      } catch (error) {
+        console.error('Erro ao atualizar planilha:', error);
+      }
+    }
+  };
+
   const value = {
     comps,
     addComp,
@@ -279,6 +336,8 @@ export function CompProvider({ children }: { children: ReactNode }) {
     getTodayComps,
     clearAllComps,
     isLoading,
+    spreadsheetManager,
+    updateSpreadsheet
   };
 
   return (

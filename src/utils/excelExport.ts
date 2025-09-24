@@ -243,3 +243,146 @@ function generateFileName(filters: FilterParams): string {
   const reportType = getReportTypeLabel(filters.reportType).toLowerCase();
   return `relatorio_comps_${reportType}_${date}.xlsx`;
 }
+
+// Nova função para gerar planilha no formato da imagem
+export function exportToExcelFormatoImagem(data: ExportData) {
+  const { comps, compTypes, waiters, managers, filters, formatCurrency } = data;
+  
+  // Filtrar dados baseado nos filtros
+  const filteredComps = filterComps(comps, filters, compTypes);
+  
+  // Calcular totais
+  const totalValue = filteredComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
+  
+  // Agrupar por tipo de COMP para calcular percentuais
+  const compsByType = compTypes.map(compType => {
+    const tipoComps = filteredComps.filter(comp => comp.compTypeId === compType.id);
+    const typeValue = tipoComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
+    return {
+      codigo: compType.codigo,
+      totalValue: typeValue,
+      percentage: totalValue > 0 ? (typeValue / totalValue) * 100 : 0
+    };
+  });
+  
+  // Agrupar por garçom
+  const compsByWaiter = waiters.map(waiter => {
+    const waiterComps = filteredComps.filter(comp => comp.waiterId === waiter.id);
+    const waiterTotal = waiterComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
+    
+    // Agrupar por tipo de COMP para este garçom
+    const compsByTypeForWaiter = compTypes.map(compType => {
+      const tipoComps = waiterComps.filter(comp => comp.compTypeId === compType.id);
+      const tipoValue = tipoComps.reduce((sum, comp) => sum + comp.valorCentavos, 0);
+      const motivos = tipoComps.map(comp => comp.motivo || '').filter(m => m).join(' / ');
+      return {
+        codigo: compType.codigo,
+        value: tipoValue,
+        justificativa: motivos
+      };
+    });
+    
+    return {
+      waiter,
+      totalValue: waiterTotal,
+      compsByType: compsByTypeForWaiter
+    };
+  }).filter(item => item.totalValue > 0);
+  
+  // Criar dados da planilha no formato exato da imagem
+  const planilhaData = [];
+  
+  // Linha 1: Cabeçalho com data
+  const dataFormatada = format(new Date(filters.startDate), 'M/d/yyyy', { locale: ptBR });
+  planilhaData.push([
+    'DATA', dataFormatada, '', 'GERENTE DIURNO', 'ADM'
+  ]);
+  
+  // Linha 2: Total dos COMPs
+  planilhaData.push([
+    'COMP\'S TOTAL', formatCurrency(totalValue), '', 'GERENTE NOTURNO', 'ADM'
+  ]);
+  
+  // Linha 3: Título das porcentagens
+  planilhaData.push([
+    'PORCENTAGEM DE CADA COMPS EM RELAÇÃO AO TOTAL DE COMPS'
+  ]);
+  
+  // Linhas 4 e 5: Vazias
+  planilhaData.push(['']);
+  planilhaData.push(['']);
+  
+  // Linha 6: Percentuais por tipo (assumindo ordem: 2, 4, 8, 11, 12, 13)
+  const tipos = ['2', '4', '8', '11', '12', '13'];
+  const percentuais = tipos.map(codigo => {
+    const comp = compsByType.find(c => c.codigo === codigo);
+    return comp ? `${comp.percentage.toFixed(2)}%` : '0%';
+  });
+  
+  planilhaData.push([
+    '', '', percentuais[0], percentuais[1], percentuais[2], 
+    percentuais[3], percentuais[4], percentuais[5]
+  ]);
+  
+  // Linha 7: Cabeçalho da tabela
+  planilhaData.push([
+    'WAITER', 'TOTAL', 'COMPS 2', 'COMP\'S 4', 'COMPS 8', 'COMP\'S 11', 'COMP\'S 12', 'COMP\'S 13', 'JUSTIFICATIVAS'
+  ]);
+  
+  // Linhas dos garçons
+  compsByWaiter.forEach(item => {
+    const { waiter, totalValue, compsByType } = item;
+    
+    // Encontrar valores por tipo
+    const valores = tipos.map(codigo => {
+      const comp = compsByType.find(c => c.codigo === codigo);
+      return comp && comp.value > 0 ? formatCurrency(comp.value) : '';
+    });
+    
+    // Pegar todas as justificativas não vazias
+    const justificativas = compsByType
+      .filter(c => c.justificativa)
+      .map(c => c.justificativa)
+      .join(' / ');
+    
+    planilhaData.push([
+      waiter.nome,
+      formatCurrency(totalValue),
+      valores[0], // COMPS 2
+      valores[1], // COMP'S 4
+      valores[2], // COMPS 8
+      valores[3], // COMP'S 11
+      valores[4], // COMP'S 12
+      valores[5], // COMP'S 13
+      justificativas
+    ]);
+  });
+  
+  // Criar workbook
+  const workbook = XLSX.utils.book_new();
+  
+  // Converter dados para worksheet
+  const worksheet = XLSX.utils.aoa_to_sheet(planilhaData);
+  
+  // Definir larguras das colunas
+  worksheet['!cols'] = [
+    { wch: 15 }, // WAITER
+    { wch: 12 }, // TOTAL
+    { wch: 12 }, // COMPS 2
+    { wch: 12 }, // COMP'S 4
+    { wch: 12 }, // COMPS 8
+    { wch: 12 }, // COMP'S 11
+    { wch: 12 }, // COMP'S 12
+    { wch: 12 }, // COMP'S 13
+    { wch: 80 }  // JUSTIFICATIVAS
+  ];
+  
+  // Adicionar worksheet ao workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório COMPS');
+  
+  // Gerar nome do arquivo
+  const fileName = `relatorio_comps_${dataFormatada.replace(/\//g, '-')}.xlsx`;
+  
+  // Salvar arquivo
+  XLSX.writeFile(workbook, fileName);
+}

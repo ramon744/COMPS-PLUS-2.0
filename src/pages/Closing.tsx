@@ -1,3 +1,6 @@
+// src/pages/Closing-nova.tsx
+// Versão modificada para usar integração direta com planilha
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,15 +21,12 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { 
-  Send, 
   DollarSign, 
   Users, 
   FileText, 
@@ -43,6 +43,7 @@ import { useRegistry } from "@/contexts/RegistryContext";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDateBR } from "@/lib/utils";
+import { sheetsIntegrationService, FechamentoData, WaiterData } from "@/services/sheetsIntegration";
 
 export default function Closing() {
   const navigate = useNavigate();
@@ -82,138 +83,59 @@ export default function Closing() {
   
   // Contador em tempo real para minutos restantes
   useEffect(() => {
-    if (!nextAllowedSendTime) {
-      setRemainingMinutes(0);
-      return;
-    }
-
-    const updateRemainingTime = () => {
+    if (nextAllowedSendTime) {
+      const interval = setInterval(() => {
       const now = new Date();
-      const timeDiff = nextAllowedSendTime.getTime() - now.getTime();
-      const minutesLeft = Math.ceil(timeDiff / (1000 * 60));
+        const diff = nextAllowedSendTime.getTime() - now.getTime();
       
-      if (minutesLeft <= 0) {
+        if (diff <= 0) {
         setRemainingMinutes(0);
         setNextAllowedSendTime(null);
-        // Apenas notificar que o tempo expirou, sem recarregar automaticamente
-        toast({
-          title: "Pode enviar agora!",
-          description: "O tempo de espera de 30 minutos foi concluído.",
-          duration: 2000,
-        });
-        // Fechar o modal automaticamente quando o tempo expirar
-        setShowDuplicateWarning(false);
       } else {
-        setRemainingMinutes(minutesLeft);
-      }
-    };
-
-    // Atualizar imediatamente
-    updateRemainingTime();
-    
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(updateRemainingTime, 30000);
+          setRemainingMinutes(Math.ceil(diff / (1000 * 60)));
+        }
+      }, 1000);
     
     return () => clearInterval(interval);
-  }, [nextAllowedSendTime, toast]);
+    }
+  }, [nextAllowedSendTime]);
   
-  // Verificar se já existe fechamento para o dia operacional
+  // Verificar se já existe fechamento para este dia
   const checkExistingClosing = async () => {
     try {
-      console.log('🔍 Verificando fechamento existente para:', operationalDay);
-      
       const { data: existingClosing, error } = await supabase
         .from('closings')
-        .select('id, fechado_em_local, total_valor_centavos, total_qtd')
+        .select('fechado_em_local')
         .eq('dia_operacional', operationalDay)
-        .order('fechado_em_local', { ascending: false });
+        .order('fechado_em_local', { ascending: false })
+        .limit(1)
+        .single();
 
-      if (error) {
-        console.error('❌ Erro ao verificar fechamento existente:', error);
+      if (error && error.code !== 'PGRST116') {
+        console.error('Erro ao verificar fechamento existente:', error);
         return { hasExisting: false, canSendNow: true, nextAllowedTime: null };
       }
 
-      if (existingClosing && existingClosing.length > 0) {
-        console.log('⚠️ Fechamento já existe para hoje:', existingClosing);
-        
-        // Verificar se o último fechamento foi há menos de 30 minutos
-        const lastClosingTime = new Date(existingClosing[0].fechado_em_local);
+      if (existingClosing) {
+        const lastClosing = new Date(existingClosing.fechado_em_local);
         const now = new Date();
-        const timeDiffMinutes = (now.getTime() - lastClosingTime.getTime()) / (1000 * 60);
+        const diffMinutes = (now.getTime() - lastClosing.getTime()) / (1000 * 60);
         
-        console.log('🕒 Tempo desde último fechamento:', timeDiffMinutes, 'minutos');
-        
-        if (timeDiffMinutes < 30) {
-          // Calcular quando pode enviar novamente
-          const nextAllowedTime = new Date(lastClosingTime.getTime() + (30 * 60 * 1000));
-          console.log('⏰ Próximo envio permitido às:', nextAllowedTime.toLocaleTimeString('pt-BR'));
-          
-          setHasExistingClosing(true);
-          return { 
-            hasExisting: true, 
-            canSendNow: false, 
-            nextAllowedTime: nextAllowedTime,
-            lastClosingTime: lastClosingTime 
-          };
-        }
-        
+        setLastClosingTime(lastClosing);
         setHasExistingClosing(true);
-        return { hasExisting: true, canSendNow: true, nextAllowedTime: null };
+        
+        if (diffMinutes < 30) {
+          const nextAllowed = new Date(lastClosing.getTime() + (30 * 60 * 1000));
+          setNextAllowedSendTime(nextAllowed);
+          return { hasExisting: true, canSendNow: false, nextAllowedTime: nextAllowed };
+        }
       }
 
-      console.log('✅ Nenhum fechamento encontrado para hoje');
       return { hasExisting: false, canSendNow: true, nextAllowedTime: null };
     } catch (error) {
-      console.error('❌ Erro ao verificar fechamento existente:', error);
+      console.error('Erro ao verificar fechamento existente:', error);
       return { hasExisting: false, canSendNow: true, nextAllowedTime: null };
     }
-  };
-  
-  const handleInitialClosing = async () => {
-    console.log('🔍 DEBUG - Verificando fechamento duplicado para:', operationalDay);
-    
-    // Verificar se já existe fechamento antes de mostrar o formulário
-    const closingStatus = await checkExistingClosing();
-    
-    console.log('🔍 DEBUG - Resultado da verificação:', { closingStatus, operationalDay });
-    
-    if (closingStatus.hasExisting) {
-      if (!closingStatus.canSendNow && closingStatus.nextAllowedTime) {
-        // Armazenar informações de tempo para exibir no modal
-        setLastClosingTime(closingStatus.lastClosingTime || null);
-        setNextAllowedSendTime(closingStatus.nextAllowedTime);
-        
-        // Mostrar aviso de tempo de espera
-        const nextTimeFormatted = closingStatus.nextAllowedTime.toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        toast({
-          title: "Aguarde para enviar novamente",
-          description: `Relatórios só podem ser enviados a cada 30 minutos. Próximo envio permitido às ${nextTimeFormatted}.`,
-          variant: "destructive",
-          duration: 3000,
-        });
-        
-        // Mostrar modal com informações detalhadas
-        setShowDuplicateWarning(true);
-        return;
-      } else {
-        console.log('⚠️ AVISO: Fechamento duplicado detectado, mas pode enviar!');
-        setLastClosingTime(closingStatus.lastClosingTime || null);
-        setNextAllowedSendTime(null);
-        setShowDuplicateWarning(true);
-      }
-    } else {
-      console.log('✅ OK: Nenhum fechamento duplicado, continuando...');
-      setShowManagerForm(true);
-    }
-  };
-
-  const handleDuplicateClosing = () => {
-    setShowDuplicateWarning(false);
-    setShowManagerForm(true);
   };
 
   const handleCancelDuplicate = () => {
@@ -250,192 +172,122 @@ export default function Closing() {
       return;
     }
 
-    // DEBUG: Verificar configurações de webhook
-    console.log('🔍 DEBUG - Configurações de webhook:', {
-      webhookAtivo: config.webhookAtivo,
-      webhookUrl: config.webhookUrl,
-      webhookUrlTrimmed: config.webhookUrl?.trim(),
-      webhookUrlLength: config.webhookUrl?.length,
-      configCompleto: config
-    });
+    console.log('✅ INICIANDO FECHAMENTO COM INTEGRAÇÃO DIRETA NA PLANILHA');
+    await processarFechamentoComPlanilha();
+  };
 
-    // Verificar se o webhook está configurado
-    if (!config.webhookAtivo || !config.webhookUrl || config.webhookUrl.trim() === '') {
-      console.log('❌ WEBHOOK NÃO CONFIGURADO - Bloqueando fechamento');
-      toast({
-        title: "Webhook não configurado",
-        description: "Configure um webhook nas configurações antes de fazer o fechamento.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log('✅ WEBHOOK CONFIGURADO - Prosseguindo com fechamento');
-
+  const processarFechamentoComPlanilha = async () => {
+    console.log('🔄 Iniciando fechamento - setando isClosing para true');
     setIsClosing(true);
     setProgress(0);
+    console.log('📊 Estado inicial - isClosing:', true, 'progress:', 0);
     
     try {
-      // Calcular porcentagens dos tipos de COMP
-      const compTypePercentages: { [key: string]: string } = {};
+      // Preparar dados para a planilha
+      console.log('🔍 DEBUG - Dados do closingSummary:', closingSummary);
+      console.log('🔍 DEBUG - byWaiter:', closingSummary.byWaiter);
       
-      // Inicializar todos os tipos com 0%
-      ['comps2', 'comps4', 'comps8', 'comps11', 'comps12', 'comps13'].forEach(type => {
-        compTypePercentages[`Porcentagem_${type}`] = '0%';
-      });
-      
-      // Calcular porcentagens reais dos tipos utilizados
-      closingSummary.byType.forEach((type) => {
-        const percentage = closingSummary.totalValue > 0 ? (type.value / closingSummary.totalValue * 100) : 0;
-        const typeKey = `Porcentagem_${type.name.toLowerCase().replace(/\s+/g, '')}`;
-        compTypePercentages[typeKey] = `${percentage.toFixed(2)}%`;
-      });
-
-      const totalSteps = closingSummary.byWaiter.filter(w => w.value > 0).length + 1;
-      let currentStep = 0;
-
-      // 1. PRIMEIRO: Envios individuais por funcionário
-      for (const waiter of closingSummary.byWaiter) {
-        if (waiter.value > 0) { // Só enviar se o funcionário teve COMPs
-          // Calcular valores por tipo de COMP para este funcionário
-          const waiterCompData: { [key: string]: string } = {
-            acao: "dados funcionarios",
-            Nome: waiter.name,
-            Total_de_comps: formatCurrency(waiter.value),
-          };
-
-          // Inicializar todos os tipos
-          ['comps2', 'comps4', 'comps8', 'comps11', 'comps12', 'comps13'].forEach(type => {
-            waiterCompData[`Total_de_${type}`] = '';
-          });
+      const waiters: WaiterData[] = closingSummary.byWaiter
+        .filter(w => w.value > 0)
+        .map(waiter => {
+          console.log('🔍 DEBUG - Processando waiter:', waiter);
 
           // Calcular valores por tipo de COMP para este funcionário
+          const typeGroups: { [key: string]: number } = {};
           if (waiter.details) {
-            // Agrupar por tipo de COMP
-            const typeGroups: { [key: string]: number } = {};
+            console.log('🔍 DEBUG - Details do waiter:', waiter.details);
             waiter.details.forEach((comp: any) => {
-              const typeKey = comp.type.toLowerCase().replace(/\s+/g, '');
-              typeGroups[typeKey] = (typeGroups[typeKey] || 0) + comp.value;
-            });
-
-            // Preencher dados por tipo
-            Object.entries(typeGroups).forEach(([type, value]) => {
-              const dataKey = `Total_de_${type}`;
-              if (waiterCompData[dataKey] !== undefined) {
-                waiterCompData[dataKey] = formatCurrency(value);
+              // Mapear corretamente os tipos de COMP
+              let typeKey = '';
+              const compType = comp.type.toLowerCase().replace(/\s+/g, '');
+              
+              if (compType.includes('2')) {
+                typeKey = 'comps2';
+              } else if (compType.includes('4')) {
+                typeKey = 'comps4';
+              } else if (compType.includes('8')) {
+                typeKey = 'comps8';
+              } else if (compType.includes('11')) {
+                typeKey = 'comps11';
+              } else if (compType.includes('12')) {
+                typeKey = 'comps12';
+              } else if (compType.includes('13')) {
+                typeKey = 'comps13';
               }
+              
+              if (typeKey) {
+              typeGroups[typeKey] = (typeGroups[typeKey] || 0) + comp.value;
+              }
+              
+              console.log(`🔍 DEBUG - COMP tipo "${comp.type}" mapeado para "${typeKey}" com valor ${comp.value}`);
             });
           }
 
           // Coletar justificativas dos COMPs deste funcionário
-          const waiterJustifications = waiter.details
+          const justificativas = waiter.details
             ?.map((comp: any) => comp.motivo)
             .filter(Boolean)
             .join('/ ') || '';
 
-          waiterCompData.Justificativas = waiterJustifications;
-
-          await sendWebhook(waiterCompData);
+          const waiterData = {
+            nome: waiter.name,
+            total: waiter.value / 100, // Converter centavos para reais
+            comps2: (typeGroups.comps2 || 0) / 100, // Converter centavos para reais
+            comps4: (typeGroups.comps4 || 0) / 100, // Converter centavos para reais
+            comps8: (typeGroups.comps8 || 0) / 100, // Converter centavos para reais
+            comps11: (typeGroups.comps11 || 0) / 100, // Converter centavos para reais
+            comps12: (typeGroups.comps12 || 0) / 100, // Converter centavos para reais
+            comps13: (typeGroups.comps13 || 0) / 100, // Converter centavos para reais
+            justificativas: justificativas
+          };
           
-          currentStep++;
-          setProgress((currentStep / totalSteps) * 100);
-          
-          // Aguardar intervalo configurado antes do próximo envio
-          await new Promise(resolve => setTimeout(resolve, (webhookInterval || 2) * 1000));
+          console.log('🔍 DEBUG - WaiterData criado:', waiterData);
+          return waiterData;
+        });
+      
+      console.log('🔍 DEBUG - Waiters finais preparados:', waiters);
+      console.log('🔍 DEBUG - Quantidade de waiters:', waiters.length);
+
+      // Calcular porcentagens
+      const porcentagens = sheetsIntegrationService.calcularPorcentagens(waiters);
+
+      // Converter data para formato brasileiro DD/MM/AAAA
+      const dataFormatoBrasileiro = (() => {
+        if (reportDate && reportDate.includes('-')) {
+          const [year, month, day] = reportDate.split('-');
+          return `${day}/${month}/${year}`;
         }
-      }
+        return reportDate;
+      })();
 
-      // 2. DEPOIS: Envio dos dados gerais do relatório (que dispara o email)
-      // Preparar campos de email (máximo 5)
-      const emailFields: { [key: string]: string } = {};
-      const emailsDestino = config?.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"];
-      for (let i = 1; i <= 5; i++) {
-        emailFields[`email_destino${i}`] = emailsDestino[i - 1] || "";
-      }
-      
-      // Buscar texto personalizado do gerente logado
-      let textoPersonalizado = config?.textoEmailPadrao || "Segue em anexo o relatório de COMPs do dia operacional.";
-      
-      if (user?.id) {
-        try {
-          const { data: emailSettings } = await supabase
-            .from('manager_email_settings')
-            .select('texto_padrao')
-            .eq('manager_id', user.id)
-            .eq('ativo', true)
-            .single();
-
-          if (emailSettings) {
-            textoPersonalizado = emailSettings.texto_padrao || textoPersonalizado;
-          }
-        } catch (error) {
-          console.log('Usando texto padrão global:', error);
-        }
-      }
-
-      // Substituir variáveis no texto personalizado
-      const textoFinal = textoPersonalizado
-        .replace('{data_operacional}', formatDateBR(reportDate))
-        .replace('{valor_total}', formatCurrency(closingSummary.totalValue))
-        .replace('{gerente_diurno}', morningManager)
-        .replace('{gerente_noturno}', nightManager)
-        .replace(/\n/g, '<br>'); // Converter quebras de linha para HTML
-
-      // Buscar telefone do gerente que está fazendo o fechamento (usuário logado)
-      const closingManagerData = managers.find(m => m.usuario === user?.email);
-      
-      // Debug do telefone do gerente que está fazendo o fechamento
-      console.log('🔍 DEBUG - Gerente que está fazendo o fechamento:', {
-        userEmail: user?.email,
-        closingManagerData: closingManagerData ? {
-          nome: closingManagerData.nome,
-          telefone: closingManagerData.telefone
-        } : null
-      });
-      
-      const generalData = {
-        acao: "dados relatorio",
-        Data_relatorio: formatDateBR(reportDate),
-        Valor_total_de_comps: formatCurrency(closingSummary.totalValue),
-        Gerente_diurno: morningManager,
-        Gerente_diurno_telefone: closingManagerData?.telefone || "",
-        Gerente_noturno: nightManager,
-        Gerente_noturno_telefone: closingManagerData?.telefone || "",
-        ...compTypePercentages,
-        ...emailFields,
-        Texto_padrao_email: textoFinal
+      // Preparar dados do fechamento
+      const fechamentoData: FechamentoData = {
+        dataOperacional: dataFormatoBrasileiro,
+        gerenteDiurno: morningManager,
+        gerenteNoturno: nightManager,
+        totalComps: closingSummary.totalValue / 100, // Converter centavos para reais
+        waiters: waiters,
+        porcentagens: porcentagens
       };
-      
-      // Debug dos dados finais
-      console.log('🔍 DEBUG - Dados do fechamento com telefones:', {
-        Gerente_diurno: generalData.Gerente_diurno,
-        Gerente_diurno_telefone: generalData.Gerente_diurno_telefone,
-        Gerente_noturno: generalData.Gerente_noturno,
-        Gerente_noturno_telefone: generalData.Gerente_noturno_telefone,
-        Telefone_do_gerente_que_fechou: closingManagerData?.telefone || "Não encontrado"
+
+      console.log('📋 Dados preparados para planilha:', fechamentoData);
+
+      // Processar fechamento na planilha
+      setProgress(25);
+      const resultado = await sheetsIntegrationService.processarFechamento(fechamentoData, (progress) => {
+        setProgress(progress);
+        console.log(`📊 Progresso: ${progress}%`);
       });
 
-      // 🔥 REGISTRO DIRETO NO BANCO - FORÇANDO CACHE BREAK
-      let closingId = null;
-      try {
-        const TIMESTAMP_CACHE_BREAK = Date.now(); // Força novo bundle
+      if (resultado.success) {
+        setProgress(75);
+
+        // Registrar fechamento no banco de dados
         const agora = new Date();
-        
-        // Criar data de início operacional de forma mais robusta
         const [year, month, day] = operationalDay.split('-').map(Number);
         const horaCorte = config?.horaCorte || '05:00';
         const [hours, minutes] = horaCorte.split(':').map(Number);
-        
         const inicioOperacional = new Date(year, month - 1, day, hours, minutes, 0, 0);
-        
-        console.log(`🔧 CORREÇÃO HTTP 406 v2.0.7 [${TIMESTAMP_CACHE_BREAK}] - Registrando fechamento:`, {
-          operationalDay,
-          agora: agora.toISOString(),
-          inicioOperacional: inicioOperacional.toISOString(),
-          totalValue: closingSummary.totalValue,
-          totalQuantity: closingSummary.totalQuantity,
-          cacheBreaker: TIMESTAMP_CACHE_BREAK
-        });
 
         const { data: closingData, error: closingError } = await supabase
           .from('closings')
@@ -445,47 +297,25 @@ export default function Closing() {
             periodo_fim_local: agora.toISOString(),
             total_valor_centavos: Math.round(closingSummary.totalValue * 100),
             total_qtd: closingSummary.totalQuantity,
-            fechado_por: user?.id || '4728cc7d-d9c0-4f37-8eff-d3d1b511ca85', // Fallback temporário
+            fechado_por: user?.id || '4728cc7d-d9c0-4f37-8eff-d3d1b511ca85',
             fechado_em_local: agora.toISOString(),
             enviado_para: config?.emailsDestino || [],
-            observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Webhook enviado para ${config?.webhookUrl || 'N/A'}. Cache: ${TIMESTAMP_CACHE_BREAK}`,
+            observacao: `Fechamento realizado por ${morningManager} (manhã) e ${nightManager} (noite). Dados enviados diretamente para planilha Google Sheets.`,
           })
           .select('id')
           .single();
 
         if (closingError) {
-          console.error(`❌ Erro ao registrar fechamento [${TIMESTAMP_CACHE_BREAK}]:`, closingError);
-          // Não falhar o fechamento por causa disso, apenas logar
-        } else {
-          closingId = closingData?.id;
-          console.log(`🎉 SUCESSO TOTAL v2.0.7 [${TIMESTAMP_CACHE_BREAK}] - AVISO DUPLICADO FUNCIONANDO! ID: ${closingId}`);
+          console.error('❌ Erro ao registrar fechamento no banco:', closingError);
+          throw new Error(`Erro ao registrar fechamento: ${closingError.message}`);
         }
-      } catch (error) {
-        console.error('❌ Erro ao processar registro do fechamento:', error);
-        // Não falhar o fechamento por causa disso, apenas logar
-      }
 
-      // Enviar webhook com ID de fechamento
-      if (closingId) {
-        const webhookDataWithId = {
-          ...generalData,
-          closing_id: closingId
-        };
-        
-        console.log('📤 Enviando webhook com ID de fechamento:', closingId);
-        await sendWebhook(webhookDataWithId);
-      } else {
-        console.warn('⚠️ ID de fechamento não disponível, enviando webhook sem ID');
-        await sendWebhook(generalData);
-      }
-      
-      currentStep++;
       setProgress(100);
       
       toast({
         title: "Dia fechado com sucesso!",
-        description: "Todos os dados foram enviados para o webhook configurado.",
-        duration: 2000,
+          description: "Todos os dados foram enviados diretamente para a planilha Google Sheets.",
+          duration: 3000,
       });
       
       // Fechar o diálogo imediatamente
@@ -495,14 +325,17 @@ export default function Closing() {
       setTimeout(() => {
         navigate('/');
       }, 1000);
+      } else {
+        throw new Error(resultado.message);
+      }
       
     } catch (error) {
       console.error('Erro no fechamento:', error);
       toast({
         title: "Erro no fechamento",
-        description: "Ocorreu um erro durante o processo de fechamento.",
+        description: `Ocorreu um erro durante o processo de fechamento: ${error.message}`,
         variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
     } finally {
       setIsClosing(false);
@@ -510,7 +343,7 @@ export default function Closing() {
     }
   };
 
-  const canClose = !hasIssues && config.webhookAtivo && config.webhookUrl && config.webhookUrl.trim() !== ''; // Só pode fechar se não houver pendências e webhook estiver configurado
+  const canClose = !hasIssues; // Só pode fechar se não houver pendências
   const managers = getActiveManagers();
 
   return (
@@ -528,6 +361,7 @@ export default function Closing() {
               <p className="text-sm text-muted-foreground mt-2">{operationalDayDisplay}</p>
             </div>
           </Card>
+
 
           {/* Resumo Geral */}
           <div className="grid grid-cols-2 gap-4">
@@ -579,167 +413,97 @@ export default function Closing() {
               {closingSummary.byType.map((type) => {
                 const percentage = closingSummary.totalValue > 0 ? (type.value / closingSummary.totalValue * 100) : 0;
                 return (
-                  <div key={type.name} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                      <Badge variant="secondary" className="w-fit">{type.name}</Badge>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                      <span className="text-sm">{type.count} ocorrências</span>
-                      <div className="flex items-center gap-1">
-                        <Percent className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{percentage.toFixed(1)}%</span>
+                  <div key={type.name} className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="text-xs">
+                        {type.name}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {type.count} itens
+                      </span>
                       </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold">{formatCurrency(type.value)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {percentage.toFixed(1)}%
+                      </p>
                     </div>
-                    </div>
-                    <span className="font-bold text-right sm:text-left">{formatCurrency(type.value)}</span>
                   </div>
                 );
               })}
             </div>
           </Card>
 
-          {/* Totais por Atendente */}
+          {/* Top Waiters */}
           <Card className="p-6 bg-gradient-card shadow-card">
             <div className="flex items-center gap-2 mb-4">
               <Users className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Totais por Atendente</h3>
+              <h3 className="font-semibold">Top Atendentes</h3>
             </div>
             <div className="space-y-3">
-              {closingSummary.byWaiter.map((waiter) => (
-                <div key={waiter.name} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                    <span className="font-medium">{waiter.name}</span>
-                    <span className="text-sm text-muted-foreground">{waiter.count} COMPs</span>
+              {closingSummary.byWaiter.slice(0, 5).map((waiter, index) => (
+                <div key={waiter.name} className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-primary">#{index + 1}</span>
+                    <span className="text-sm font-medium">{waiter.name}</span>
                   </div>
-                  <span className="font-bold text-right sm:text-left">{formatCurrency(waiter.value)}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Status e Validações */}
-          <Card className="p-6 bg-gradient-card shadow-card">
-            <h3 className="font-semibold mb-4">Status do Fechamento</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-success" />
-                <span className="text-sm">Todos os COMPs possuem motivo preenchido</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-success" />
-                <span className="text-sm">Nenhum valor zerado ou inválido</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-success" />
-                <span className="text-sm">Todas as informações obrigatórias preenchidas</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Status do Webhook */}
-          <Card className="p-6 bg-gradient-card shadow-card">
-            <h3 className="font-semibold mb-4">Status do Webhook</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                {config.webhookAtivo && config.webhookUrl && config.webhookUrl.trim() !== '' ? (
-                  <>
-                    <CheckCircle className="h-5 w-5 text-success" />
-                    <span className="text-sm text-success">Webhook configurado e ativo</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                    <span className="text-sm text-destructive">Webhook não configurado</span>
-                  </>
-                )}
-              </div>
-              {config.webhookAtivo && config.webhookUrl && (
-                <div className="text-xs text-muted-foreground break-all">
-                  URL: {config.webhookUrl}
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* E-mails de Destino */}
-          <Card className="p-6 bg-gradient-card shadow-card">
-            <h3 className="font-semibold mb-4">Relatório será enviado para:</h3>
-            <div className="space-y-2">
-              {(config?.emailsDestino || ["proprietario@restaurante.com", "gerente@restaurante.com"]).map((email) => (
-                <div key={email} className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span className="text-sm">{email}</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold">{formatCurrency(waiter.value)}</p>
+                    <p className="text-xs text-muted-foreground">{waiter.count} itens</p>
+                  </div>
                 </div>
               ))}
             </div>
           </Card>
 
           {/* Botão de Fechamento */}
-          <Dialog>
-            <DialogTrigger asChild>
+          <Card className="p-6 bg-gradient-card shadow-card">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <CheckCircle className="h-5 w-5 text-success" />
+                <h3 className="font-semibold">Pronto para Fechar</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Todos os dados estão corretos e prontos para serem enviados para a planilha.
+              </p>
               <Button 
-                disabled={!canClose || isClosing}
-                className="w-full h-12 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200"
+                onClick={() => setShowManagerForm(true)}
+                disabled={!canClose}
+                className="w-full bg-gradient-primary"
                 size="lg"
               >
-                {isClosing ? (
-                  <>Processando Fechamento...</>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5 mr-2" />
-                    Fechar & Enviar Dia
-                  </>
-                )}
+                Fechar & Enviar para Planilha
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Confirmar Fechamento do Dia</DialogTitle>
-              </DialogHeader>
+            </div>
+          </Card>
+
+          {/* Progress Bar */}
+          {isClosing && (
+          <Card className="p-6 bg-gradient-card shadow-card">
               <div className="space-y-4">
-                <div className="p-4 bg-warning/10 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
-                    <span className="font-medium text-warning">Atenção</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Após o fechamento, não será possível editar os COMPs deste dia operacional. 
-                    O relatório será enviado automaticamente por e-mail.
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button 
-                    onClick={handleInitialClosing}
-                    disabled={isClosing}
-                    className="flex-1 bg-gradient-primary"
-                  >
-                    Continuar
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span className="text-sm font-medium">Processando fechamento...</span>
               </div>
-            </DialogContent>
-          </Dialog>
+                <Progress value={progress} className="w-full" />
+                <p className="text-xs text-muted-foreground text-center">
+                  Enviando dados para a planilha Google Sheets...
+                </p>
+            </div>
+          </Card>
+          )}
 
-          {/* Dialog do Formulário de Gerentes */}
+          {/* Modal de Informações dos Gerentes */}
           <Dialog open={showManagerForm} onOpenChange={setShowManagerForm}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Informações dos Gerentes</DialogTitle>
                 <DialogDescription>
                   Selecione os gerentes responsáveis pelos turnos diurno e noturno
                 </DialogDescription>
               </DialogHeader>
+              
               <div className="space-y-4">
-                {isClosing && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Enviando dados...</Label>
-                      <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} className="w-full" />
-                  </div>
-                )}
-                
                 <div className="space-y-2">
                   <Label>Gerente Diurno *</Label>
                   <Select
@@ -794,6 +558,31 @@ export default function Closing() {
                   />
                 </div>
 
+                {/* Barra de progresso no modal */}
+                {isClosing && (
+                  <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-blue-700">
+                        🔄 Processando fechamento...
+                      </span>
+                      <span className="text-sm text-blue-600 font-bold">
+                        {progress}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-3">
+                      <div 
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 text-xs text-blue-600">
+                      {progress < 25 && "📋 Enviando cabeçalho..."}
+                      {progress >= 25 && progress < 100 && "👥 Enviando dados dos waiters..."}
+                      {progress === 100 && "✅ Fechamento concluído!"}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <Button 
                     variant="outline" 
@@ -815,41 +604,27 @@ export default function Closing() {
             </DialogContent>
           </Dialog>
 
-          {/* Dialog de Aviso de Fechamento Duplicado */}
+          {/* Modal de Aviso de Duplicata */}
           <Dialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>⚠️ Fechamento Já Realizado</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  Fechamento já realizado
+                </DialogTitle>
                 <DialogDescription>
-                  Informações sobre o último fechamento e restrições de tempo
+                  Já existe um fechamento para este dia operacional.
                 </DialogDescription>
               </DialogHeader>
+              
               <div className="space-y-4">
                 <div className="p-4 bg-warning/10 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
-                    <span className="font-medium text-warning">Atenção</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Já foi realizado um fechamento para o dia operacional <strong>{operationalDayDisplay}</strong>
-                    {lastClosingTime && (
-                      <> às <strong>{lastClosingTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong></>
-                    )}.
+                  <p className="text-sm text-warning">
+                    <strong>Último fechamento:</strong> {lastClosingTime?.toLocaleString('pt-BR')}
                   </p>
-                  
-                  {nextAllowedSendTime ? (
-                    <div className="mt-3 p-3 bg-destructive/10 rounded border border-destructive/20">
-                      <p className="text-sm text-destructive font-medium">
-                        ⏰ Relatórios só podem ser enviados a cada 30 minutos.
-                      </p>
-                      <p className="text-sm text-destructive mt-1">
-                        Próximo envio permitido às: <strong>{nextAllowedSendTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong>
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Se você enviar novamente, será criado um novo registro no histórico. 
-                      Tem certeza que deseja continuar?
+                  {nextAllowedSendTime && (
+                    <p className="text-sm text-warning mt-2">
+                      <strong>Próximo envio permitido:</strong> {nextAllowedSendTime.toLocaleString('pt-BR')}
                     </p>
                   )}
                 </div>
@@ -862,39 +637,17 @@ export default function Closing() {
                   >
                     Cancelar
                   </Button>
-                  {nextAllowedSendTime ? (
                     <Button 
-                      disabled={true}
-                      className="flex-1 bg-muted text-muted-foreground cursor-not-allowed"
-                    >
-                      Aguardar {remainingMinutes} min
+                    onClick={handleFinalClosing}
+                    disabled={!nextAllowedSendTime || remainingMinutes > 0}
+                    className="flex-1 bg-gradient-primary"
+                  >
+                    {remainingMinutes > 0 ? `Aguardar ${remainingMinutes}min` : "Enviar Novamente"}
                     </Button>
-                  ) : (
-                    <Button 
-                      onClick={handleDuplicateClosing}
-                      className="flex-1 bg-warning hover:bg-warning/90"
-                    >
-                      Sim, Enviar Novamente
-                    </Button>
-                  )}
                 </div>
               </div>
             </DialogContent>
           </Dialog>
-
-          {!canClose && (
-            <Card className="p-4 bg-destructive/10 border-destructive">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                <span className="text-sm text-destructive">
-                  {!config.webhookAtivo || !config.webhookUrl || config.webhookUrl.trim() === '' 
-                    ? "Webhook não configurado. Configure um webhook nas configurações antes de fazer o fechamento."
-                    : "Existem pendências que impedem o fechamento. Revise os COMPs antes de continuar."
-                  }
-                </span>
-              </div>
-            </Card>
-          )}
         </div>
       </Layout>
     </div>

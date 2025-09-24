@@ -20,6 +20,9 @@ export function useCleanup() {
   });
   
   const { toast } = useToast();
+  
+  // Controle para evitar múltiplas execuções na mesma janela de tempo
+  const [lastCleanupTime, setLastCleanupTime] = useState<string | null>(null);
 
   // Verificar se é hora de fazer limpeza (a cada 5h da manhã)
   const shouldCleanup = () => {
@@ -28,12 +31,24 @@ export function useCleanup() {
     const currentMinute = now.getMinutes();
     
     // Verificar se é 5h da manhã (hora de reset do dia operacional)
-    return currentHour === 5 && currentMinute < 5; // Janela de 5 minutos
+    if (currentHour === 5 && currentMinute < 5) {
+      // Verificar se já executou hoje
+      const today = now.toDateString();
+      if (lastCleanupTime === today) {
+        return false; // Já executou hoje
+      }
+      return true;
+    }
+    return false;
   };
 
   // Executar limpeza do sistema
   const executeCleanup = async () => {
     if (status.isRunning) return;
+
+    // Marcar que executou hoje para evitar repetições
+    const now = new Date();
+    setLastCleanupTime(now.toDateString());
 
     setStatus(prev => ({ ...prev, isRunning: true, error: null }));
 
@@ -105,14 +120,14 @@ export function useCleanup() {
     return () => clearInterval(interval);
   }, []);
 
-  // Limpeza de notificações apenas (para reset do dia operacional)
+  // Limpeza de notificações apenas (notificações com mais de 48 horas)
   const cleanupNotifications = async () => {
     if (status.isRunning) return;
 
     setStatus(prev => ({ ...prev, isRunning: true, error: null }));
 
     try {
-      console.log('🔔 Limpando notificações do dia anterior...');
+      console.log('🔔 Limpando notificações com mais de 48 horas...');
       
       const { error } = await supabase.rpc('cleanup_old_notifications');
       
@@ -129,10 +144,11 @@ export function useCleanup() {
 
       console.log('✅ Notificações limpas com sucesso');
       
-      toast({
-        title: "Notificações Limpas",
-        description: "Notificações do dia anterior foram removidas.",
-      });
+      // Remover toast para evitar spam - a limpeza é automática
+      // toast({
+      //   title: "Notificações Limpas",
+      //   description: "Notificações com mais de 48 horas foram removidas.",
+      // });
     } catch (error) {
       console.error('❌ Erro ao limpar notificações:', error);
       

@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 5000);
+        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 15000);
       });
 
       const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeSession();
 
-    // Verificação periódica da sessão para detectar problemas
+    // Verificação periódica da sessão para detectar problemas (reduzida para 30 segundos)
     const sessionCheckInterval = setInterval(async () => {
       if (!isMounted) return;
       
@@ -186,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           clearTimeout(safetyTimeout);
         }
       }
-    }, 5000); // Verificar a cada 5 segundos
+    }, 30000); // Verificar a cada 30 segundos (reduzido de 5s)
 
     return () => {
       isMounted = false;

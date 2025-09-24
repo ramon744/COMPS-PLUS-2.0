@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCleanup } from '@/hooks/useCleanup';
 
 export interface Notification {
   id: string;
@@ -31,7 +30,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const { user } = useAuth();
-  const { cleanupNotifications } = useCleanup();
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
@@ -141,30 +139,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [user]); // Removido loadNotifications da dependência para evitar loop
 
-  // Limpeza automática de notificações às 5h (início do dia operacional)
-  useEffect(() => {
-    if (!user) return;
-
-    const checkAndCleanup = () => {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      
-      // Verificar se é 5h da manhã (hora de reset do dia operacional)
-      if (currentHour === 5 && currentMinute < 5) {
-        console.log('🧹 5h da manhã - Executando limpeza de notificações do dia anterior');
-        cleanupNotifications();
-      }
-    };
-
-    // Verificar imediatamente
-    checkAndCleanup();
-
-    // Verificar a cada minuto
-    const interval = setInterval(checkAndCleanup, 60000);
-
-    return () => clearInterval(interval);
-  }, [user, cleanupNotifications]);
+  // Limpeza automática removida daqui - agora é feita apenas no useCleanup.ts
+  // para evitar execuções duplicadas
 
   // Fallback: recarregar notificações periodicamente caso Realtime falhe
   useEffect(() => {

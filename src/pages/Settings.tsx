@@ -18,7 +18,7 @@ import { CleanupStatus } from "@/components/CleanupStatus";
 import { ManagerEmailSettings } from "@/components/ManagerEmailSettings";
 import { ManagerFlowSettings } from "@/components/ManagerFlowSettings";
 import { PermissionManager } from "@/components/PermissionManager";
-import { WebhookTestTab } from "@/components/WebhookTestTab";
+// import { WebhookTestTab } from "@/components/WebhookTestTab"; // Removido - arquivo não existe mais
 
 export default function Settings() {
   const { config, setConfig, saveSettings, isLoading, isSaving } = useSettings();
@@ -410,7 +410,7 @@ export default function Settings() {
                     </div>
                   </div>
                   
-                  <WebhookTestTab />
+                  {/* <WebhookTestTab /> Removido - componente não existe mais */}
                 </div>
               </TabsContent>
             )}

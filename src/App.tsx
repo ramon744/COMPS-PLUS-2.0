@@ -7,6 +7,7 @@ import { CompProvider } from "@/contexts/CompContext";
 import { RegistryProvider } from "@/contexts/RegistryContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { PerdaServicoProvider } from "@/contexts/PerdaServicoContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -14,6 +15,7 @@ import Settings from "./pages/Settings";
 import Management from "./pages/Management"; 
 import Reports from "./pages/Reports";
 import Closing from "./pages/Closing";
+import PerdaServico from "./pages/PerdaServico";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
@@ -36,20 +38,17 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationProvider>
-          <RegistryProvider>
-            <CompProvider>
-              <TooltipProvider>
+          <PerdaServicoProvider>
+            <RegistryProvider>
+              <CompProvider>
+                <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
+                  <Route path="/" element={<Index />} />
                   <Route path="/settings" element={
                     <ProtectedRoute>
                       <Settings />
@@ -70,13 +69,15 @@ const App = () => (
                       <Closing />
                     </ProtectedRoute>
                   } />
+                  <Route path="/perda-servico" element={<PerdaServico />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
-              </TooltipProvider>
-            </CompProvider>
-          </RegistryProvider>
+                </TooltipProvider>
+              </CompProvider>
+            </RegistryProvider>
+          </PerdaServicoProvider>
         </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
