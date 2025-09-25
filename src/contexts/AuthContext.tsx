@@ -106,15 +106,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user);
           console.log('✅ Usuário autenticado:', session.user.email);
         } else {
-          // Usuário deslogado
-          setSession(null);
-          setUser(null);
-          console.log('🔐 Usuário desautenticado');
+          // Usuário deslogado - só limpar se for um logout real, não um refresh
+          if (event === 'SIGNED_OUT') {
+            setSession(null);
+            setUser(null);
+            console.log('🔐 Usuário deslogado');
+          }
         }
       } catch (error) {
         console.error('❌ Erro ao processar mudança de auth:', error);
-        setSession(null);
-        setUser(null);
+        // Não limpar estado em caso de erro para evitar logout acidental
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -122,10 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Configurar listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
-
-    // Verificar sessão inicial
+    // Verificar sessão inicial PRIMEIRO
     const initializeAuth = async () => {
       try {
         console.log('🔄 Inicializando autenticação...');
@@ -170,10 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Timeout de segurança - forçando fim do loading');
         setIsLoading(false);
       }
-    }, 5000); // 5 segundos máximo
+    }, 3000); // 3 segundos máximo
 
-    // Inicializar
+    // Inicializar PRIMEIRO
     initializeAuth();
+
+    // Configurar listener DEPOIS da inicialização
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     // Cleanup
     return () => {

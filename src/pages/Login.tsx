@@ -24,7 +24,8 @@ const Login = () => {
 
   // Redirecionar se já estiver logado
   useEffect(() => {
-    if (user && !isLoading) {
+    // Só redirecionar se não está carregando E tem usuário
+    if (!isLoading && user) {
       console.log('✅ Usuário já logado, redirecionando para:', from);
       navigate(from, { replace: true });
     }
