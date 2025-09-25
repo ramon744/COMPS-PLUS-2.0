@@ -39,4 +39,8 @@ export default defineConfig(({ mode }) => ({
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __CACHE_BREAK__: JSON.stringify(Date.now().toString()),
   },
+  preview: {
+    port: 8080,
+    host: "::",
+  },
 }));
