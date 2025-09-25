@@ -47,7 +47,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// Atualizado: 2025-01-25 16:25 - Removido botão Salvar & Novo
+// VERSÃO FINAL: 2025-01-25 16:30 - APENAS 2 BOTÕES: Cancelar e Registrar
 export default function PerdaServico() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -617,20 +617,20 @@ export default function PerdaServico() {
                 )}
               </div>
 
-              {/* Botões - Apenas Cancelar e Registrar */}
-              <div className="flex gap-3 pt-4">
+              {/* Botões do formulário */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleBackToList}
-                  className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
+                  className="h-10 sm:h-11 text-sm sm:text-base"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
-                  className="flex-1 bg-red-600 hover:bg-red-700 h-10 sm:h-11 text-sm sm:text-base"
+                  className="bg-red-600 hover:bg-red-700 h-10 sm:h-11 text-sm sm:text-base"
                 >
                   {editingPerda ? 'Atualizar' : 'Registrar'}
                 </Button>
