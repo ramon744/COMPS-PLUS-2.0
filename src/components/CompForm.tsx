@@ -311,12 +311,11 @@ export function CompForm({
         </Button>
         
         <Button
-          onClick={onCancel}
-          variant="outline"
-          className="h-10 sm:h-12 text-sm sm:text-base sm:w-32"
+          onClick={() => handleSubmit(false)}
+          className="h-10 sm:h-12 bg-green-600 hover:bg-green-700 shadow-button hover:shadow-float transition-all duration-200 text-sm sm:text-base sm:flex-1"
           size="lg"
         >
-          Cancelar
+          Registrar
         </Button>
       </div>
     </div>
