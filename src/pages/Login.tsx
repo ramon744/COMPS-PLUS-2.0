@@ -30,19 +30,28 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/';
 
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (!isLoading && signIn && usuario && senha) {
+      // Se há credenciais preenchidas e não está carregando, pode ser auto-preenchimento
+      console.log('🔄 Detectado auto-preenchimento, aguardando ação do usuário');
+    }
+  }, [isLoading, usuario, senha]);
+
   // Prevenir submissão automática ao carregar a página
   useEffect(() => {
-    // Limpar campos ao carregar a página para evitar auto-submissão
+    // Apenas prevenir auto-submissão, não limpar campos se o usuário já digitou
     const preventAutoSubmit = () => {
-      if (usuario && senha) {
-        console.log('🔄 Limpando campos para prevenir auto-submissão');
-        setUsuario('');
-        setSenha('');
+      // Se os campos estão preenchidos e o usuário não está logado,
+      // pode ser auto-preenchimento do navegador
+      if (usuario && senha && !isLoading) {
+        console.log('🔄 Detectado possível auto-preenchimento do navegador');
+        // Não limpar automaticamente, apenas logar para debug
       }
     };
 
     // Executar após um pequeno delay para garantir que a página carregou
-    const timer = setTimeout(preventAutoSubmit, 100);
+    const timer = setTimeout(preventAutoSubmit, 500);
     
     return () => clearTimeout(timer);
   }, []); // Executar apenas uma vez ao montar o componente

@@ -62,14 +62,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
     let currentlyLoading = true;
     
-    // Timeout de segurança para evitar loading infinito
+    // Timeout de segurança para evitar loading infinito - aumentado para 15 segundos
     const safetyTimeout = setTimeout(() => {
       if (isMounted && currentlyLoading) {
         console.warn('⚠️ Timeout de segurança ativado - forçando setIsLoading(false)');
+        // NÃO limpar a sessão no timeout, apenas parar o loading
         setIsLoading(false);
         currentlyLoading = false;
       }
-    }, 10000); // 10 segundos máximo
+    }, 15000); // 15 segundos máximo
 
     const handleAuthStateChange = async (event: any, session: any) => {
       try {
@@ -114,14 +115,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     const initializeSession = async () => {
       try {
+        console.log('🔄 Inicializando sessão...');
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Erro ao obter sessão:', error);
+          // Só limpar se for um erro crítico, não se for apenas sessão expirada
+          if (error.message?.includes('Auth session missing') || 
+              error.message?.includes('session_not_found')) {
+            console.log('🔐 Nenhuma sessão encontrada, usuário não logado');
+          } else {
+            console.error('🔐 Erro crítico na sessão:', error);
+          }
+          
           if (isMounted) {
             setSession(null);
             setUser(null);
             setIsLoading(false);
+            currentlyLoading = false;
             clearTimeout(safetyTimeout);
           }
           return;
@@ -129,14 +141,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!isMounted) return;
         
+        console.log('🔐 Sessão encontrada:', !!session, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
+          console.log('👤 Carregando perfil do usuário...');
           const enrichedUser = await loadUserProfile(session.user);
           if (isMounted) {
             setUser(enrichedUser);
+            console.log('✅ Usuário logado:', enrichedUser.email);
           }
         } else {
+          console.log('🔐 Nenhuma sessão ativa');
           if (isMounted) {
             setUser(null);
           }
@@ -150,8 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Erro na inicialização da sessão:', error);
         if (isMounted) {
-          setSession(null);
-          setUser(null);
+          // Em caso de erro, apenas parar o loading, não limpar a sessão
           setIsLoading(false);
           currentlyLoading = false;
           clearTimeout(safetyTimeout);
