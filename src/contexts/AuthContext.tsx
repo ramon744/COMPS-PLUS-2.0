@@ -19,12 +19,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Função para carregar dados do perfil
+  // Função para carregar dados do perfil - SIMPLIFICADA
   const loadUserProfile = async (authUser: any) => {
     if (!authUser?.email) return authUser;
 
     try {
-      // Timeout para evitar travamento na busca do perfil
+      console.log('👤 Tentando carregar perfil para:', authUser.email);
+      
+      // Timeout reduzido para 3 segundos
       const profilePromise = supabase
         .from('profiles')
         .select('nome, email, role')
@@ -32,12 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 15000);
+        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 3000);
       });
 
       const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
       if (!error && profile) {
+        console.log('✅ Perfil carregado:', profile.nome, profile.role);
         // Mesclar dados do auth com dados do perfil
         return {
           ...authUser,
@@ -47,22 +50,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: profile.role
           }
         };
+      } else {
+        console.log('⚠️ Perfil não encontrado, usando dados básicos do auth');
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.log('Aviso: Não foi possível carregar perfil do usuário:', error);
-      }
-      // Em caso de erro, retornar o usuário básico para não travar a autenticação
+      console.log('⚠️ Erro ao carregar perfil, usando dados básicos:', error);
     }
 
-    return authUser;
+    // Retornar usuário básico se não conseguir carregar perfil
+    return {
+      ...authUser,
+      user_metadata: {
+        ...authUser.user_metadata,
+        name: authUser.user_metadata?.name || authUser.email,
+        role: 'user' // role padrão
+      }
+    };
   };
 
   useEffect(() => {
     let isMounted = true;
     let currentlyLoading = true;
     
-    // Timeout de segurança para evitar loading infinito - aumentado para 15 segundos
+    // Timeout de segurança para evitar loading infinito - reduzido para 8 segundos
     const safetyTimeout = setTimeout(() => {
       if (isMounted && currentlyLoading) {
         console.warn('⚠️ Timeout de segurança ativado - forçando setIsLoading(false)');
@@ -70,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
         currentlyLoading = false;
       }
-    }, 15000); // 15 segundos máximo
+    }, 8000); // 8 segundos máximo
 
     const handleAuthStateChange = async (event: any, session: any) => {
       try {
