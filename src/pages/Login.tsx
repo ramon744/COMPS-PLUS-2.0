@@ -23,7 +23,7 @@ const Login = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,11 +32,11 @@ const Login = () => {
 
   // Redirecionar se já estiver logado
   useEffect(() => {
-    if (!isLoading && signIn && usuario && senha) {
-      // Se há credenciais preenchidas e não está carregando, pode ser auto-preenchimento
-      console.log('🔄 Detectado auto-preenchimento, aguardando ação do usuário');
+    if (!isLoading && user) {
+      console.log('✅ Usuário já logado, redirecionando para:', from);
+      navigate(from, { replace: true });
     }
-  }, [isLoading, usuario, senha]);
+  }, [user, isLoading, navigate, from]);
 
   // Prevenir submissão automática ao carregar a página
   useEffect(() => {
