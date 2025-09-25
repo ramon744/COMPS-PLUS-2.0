@@ -34,11 +34,11 @@ import {
   Trash2,
   Calendar,
   Filter,
+  SaveAll,
   Check,
   ChevronsUpDown,
   ChevronDown,
-  ChevronUp,
-  SaveAll
+  ChevronUp
 } from "lucide-react";
 import { usePerdaServico } from "@/contexts/PerdaServicoContext";
 import { useRegistry } from "@/contexts/RegistryContext";
@@ -48,7 +48,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// VERSÃO FINAL: 2025-01-25 17:00 - APENAS 2 BOTÕES: Salvar & Novo e Registrar
 export default function PerdaServico() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -130,7 +129,7 @@ export default function PerdaServico() {
     return matchesSearch && matchesAtendente;
   });
 
-  const handleSubmit = async (saveAndNew: boolean = false) => {
+  const handleSubmit = async (saveAndNew: boolean) => {
     // Validação igual ao COMPs
     if (!formData.atendente_nome || !formData.numero_mesa || !formData.motivo) {
       toast({
@@ -167,25 +166,21 @@ export default function PerdaServico() {
         });
       }
       
-      if (saveAndNew) {
-        // Reset form para permitir novo registro (mantém atendente selecionado)
-        setFormData({
-          atendente_nome: formData.atendente_nome, // Manter atendente selecionado
-          numero_mesa: '',
-          motivo: ''
-        });
-        setEditingPerda(null);
-        
-        toast({
-          title: "Pronto para próximo registro!",
-          description: "Formulário resetado para nova perda de serviço.",
-          duration: 2000,
-        });
-      } else {
-        // Apenas registrar - não resetar formulário
-        setEditingPerda(null);
-      }
+      // Reset form
+      setFormData({
+        atendente_nome: '',
+        numero_mesa: '',
+        motivo: ''
+      });
+      setEditingPerda(null);
       
+      if (saveAndNew) {
+        // Manter no formulário para nova entrada
+        setCurrentView("newPerda");
+      } else {
+        // Voltar para lista
+        setCurrentView("list");
+      }
     } catch (error) {
       console.error('Erro ao salvar perda de serviço:', error);
       toast({
@@ -626,15 +621,23 @@ export default function PerdaServico() {
                 )}
               </div>
 
-              {/* Botões do formulário */}
-              <div className="flex gap-3 pt-4">
+              {/* Botões */}
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBackToList}
+                  className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
+                >
+                  Cancelar
+                </Button>
                 <Button
                   type="button"
                   onClick={() => handleSubmit(true)}
                   disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
-                  className="flex-1 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 h-10 sm:h-11 text-sm sm:text-base"
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 h-10 sm:h-11 text-sm sm:text-base"
                 >
-                  <SaveAll className="mr-2 h-4 w-4" />
+                  <SaveAll className="h-4 w-4 mr-2" />
                   Salvar & Novo
                 </Button>
                 <Button
