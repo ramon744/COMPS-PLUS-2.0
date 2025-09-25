@@ -34,7 +34,6 @@ import {
   Trash2,
   Calendar,
   Filter,
-  SaveAll,
   Check,
   ChevronsUpDown,
   ChevronDown,
@@ -129,7 +128,7 @@ export default function PerdaServico() {
     return matchesSearch && matchesAtendente;
   });
 
-  const handleSubmit = async (saveAndNew: boolean) => {
+  const handleSubmit = async () => {
     // Validação igual ao COMPs
     if (!formData.atendente_nome || !formData.numero_mesa || !formData.motivo) {
       toast({
@@ -166,7 +165,7 @@ export default function PerdaServico() {
         });
       }
       
-      // Reset form
+      // Reset form para permitir novo registro
       setFormData({
         atendente_nome: '',
         numero_mesa: '',
@@ -174,13 +173,9 @@ export default function PerdaServico() {
       });
       setEditingPerda(null);
       
-      if (saveAndNew) {
-        // Manter no formulário para nova entrada
-        setCurrentView("newPerda");
-      } else {
-        // Voltar para lista
-        setCurrentView("list");
-      }
+      // Permanecer na página do formulário - não redirecionar
+      // O usuário pode voltar manualmente se quiser
+      
     } catch (error) {
       console.error('Erro ao salvar perda de serviço:', error);
       toast({
@@ -507,7 +502,7 @@ export default function PerdaServico() {
       {currentView === "newPerda" && (
         <div className="space-y-4 animate-fade-in p-2 sm:p-0">
           <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
-            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(false); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4">
               {/* Atendente */}
               <div className="space-y-2">
                 <Label className="text-sm sm:text-base font-medium">
@@ -622,7 +617,7 @@ export default function PerdaServico() {
               </div>
 
               {/* Botões */}
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
@@ -630,15 +625,6 @@ export default function PerdaServico() {
                   className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
                 >
                   Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => handleSubmit(true)}
-                  disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700 h-10 sm:h-11 text-sm sm:text-base"
-                >
-                  <SaveAll className="h-4 w-4 mr-2" />
-                  Salvar & Novo
                 </Button>
                 <Button
                   type="submit"
