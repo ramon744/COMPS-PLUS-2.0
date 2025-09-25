@@ -36,7 +36,9 @@ import {
   Filter,
   SaveAll,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { usePerdaServico } from "@/contexts/PerdaServicoContext";
 import { useRegistry } from "@/contexts/RegistryContext";
@@ -90,6 +92,7 @@ export default function PerdaServico() {
   const [editingPerda, setEditingPerda] = useState<string | null>(null);
   const [openWaiterCombobox, setOpenWaiterCombobox] = useState(false);
   const [showOnlyToday, setShowOnlyToday] = useState(true); // Por padrão, mostrar apenas perdas do dia atual
+  const [expandedAtendentes, setExpandedAtendentes] = useState<Set<string>>(new Set()); // Para controlar quais atendentes estão expandidos
   const [formData, setFormData] = useState({
     atendente_nome: '',
     numero_mesa: '',
@@ -98,6 +101,19 @@ export default function PerdaServico() {
 
   // Usar a mesma função que a página Index usa
   const activeWaiters = getActiveWaiters();
+
+  // Função para alternar expansão dos atendentes (igual ao Index)
+  const toggleAtendenteExpansion = (atendenteName: string) => {
+    setExpandedAtendentes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(atendenteName)) {
+        newSet.delete(atendenteName);
+      } else {
+        newSet.add(atendenteName);
+      }
+      return newSet;
+    });
+  };
 
   // Obter perdas baseado no filtro de dia
   const perdasToShow = showOnlyToday ? getTodayPerdas() : perdas;
@@ -381,43 +397,107 @@ export default function PerdaServico() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredPerdas.map((perda) => (
-                  <div key={perda.id} className="border rounded-lg p-4 bg-card hover:bg-muted/50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs">
-                            Mesa {perda.numero_mesa}
-                          </Badge>
-                          <span className="font-medium">{perda.atendente_nome}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(perda.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{perda.motivo}</p>
-                      </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(perda)}
-                          className="h-8 w-8 p-0"
+              <div className="space-y-4">
+                {(() => {
+                  // Agrupar perdas por atendente (igual ao Index com COMPs)
+                  const atendenteGroups = filteredPerdas.reduce((groups, perda) => {
+                    const atendenteName = perda.atendente_nome;
+                    if (!groups[atendenteName]) {
+                      groups[atendenteName] = [];
+                    }
+                    groups[atendenteName].push(perda);
+                    return groups;
+                  }, {} as Record<string, typeof filteredPerdas>);
+
+                  // Ordenar grupos de atendentes alfabeticamente
+                  const sortedAtendenteGroups = Object.entries(atendenteGroups)
+                    .map(([atendenteName, atendentePerdas]) => {
+                      return { atendenteName, atendentePerdas };
+                    })
+                    .sort((a, b) => a.atendenteName.localeCompare(b.atendenteName, 'pt-BR'));
+
+                  return sortedAtendenteGroups.map(({ atendenteName, atendentePerdas }) => {
+                    const isExpanded = expandedAtendentes.has(atendenteName);
+                    const perdaCount = atendentePerdas.length;
+
+                    return (
+                      <div key={atendenteName} className="bg-gradient-card shadow-card rounded-lg border overflow-hidden">
+                        {/* Cabeçalho do Atendente - Clicável */}
+                        <button
+                          onClick={() => toggleAtendenteExpansion(atendenteName)}
+                          className="w-full p-4 flex justify-between items-center hover:bg-muted/50 transition-colors"
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(perda.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 text-left">
+                              <h3 className="font-semibold text-primary">{atendenteName}</h3>
+                              <p className="text-sm text-muted-foreground">{perdaCount} Perda{perdaCount !== 1 ? 's' : ''} de Serviço</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="font-bold text-lg text-red-600">
+                                {perdaCount} registro{perdaCount !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                            {isExpanded ? (
+                              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                        </button>
+
+                        {/* Lista de Perdas Expandida */}
+                        {isExpanded && (
+                          <div className="border-t bg-background/50">
+                            {atendentePerdas
+                              .sort((a, b) => {
+                                // Ordenar por data de criação (mais recente primeiro)
+                                const dateA = new Date(a.created_at);
+                                const dateB = new Date(b.created_at);
+                                return dateB.getTime() - dateA.getTime();
+                              })
+                              .map((perda, index) => (
+                              <div key={perda.id} className={`p-3 sm:p-4 ${index > 0 ? 'border-t border-border/50' : ''}`}>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                                      <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                                        Mesa {perda.numero_mesa}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground">
+                                        {format(new Date(perda.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground break-words">{perda.motivo}</p>
+                                  </div>
+                                  <div className="flex gap-2 ml-0 sm:ml-4">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEdit(perda)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDelete(perda.id)}
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
             )}
           </Card>
