@@ -37,7 +37,8 @@ import {
   Check,
   ChevronsUpDown,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  SaveAll
 } from "lucide-react";
 import { usePerdaServico } from "@/contexts/PerdaServicoContext";
 import { useRegistry } from "@/contexts/RegistryContext";
@@ -129,7 +130,7 @@ export default function PerdaServico() {
     return matchesSearch && matchesAtendente;
   });
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (saveAndNew: boolean = false) => {
     // Validação igual ao COMPs
     if (!formData.atendente_nome || !formData.numero_mesa || !formData.motivo) {
       toast({
@@ -166,16 +167,24 @@ export default function PerdaServico() {
         });
       }
       
-      // Reset form para permitir novo registro
-      setFormData({
-        atendente_nome: '',
-        numero_mesa: '',
-        motivo: ''
-      });
-      setEditingPerda(null);
-      
-      // Permanecer na página do formulário - não redirecionar
-      // O usuário pode voltar manualmente se quiser
+      if (saveAndNew) {
+        // Reset form para permitir novo registro (mantém atendente selecionado)
+        setFormData({
+          atendente_nome: formData.atendente_nome, // Manter atendente selecionado
+          numero_mesa: '',
+          motivo: ''
+        });
+        setEditingPerda(null);
+        
+        toast({
+          title: "Pronto para próximo registro!",
+          description: "Formulário resetado para nova perda de serviço.",
+          duration: 2000,
+        });
+      } else {
+        // Apenas registrar - não resetar formulário
+        setEditingPerda(null);
+      }
       
     } catch (error) {
       console.error('Erro ao salvar perda de serviço:', error);
@@ -503,7 +512,7 @@ export default function PerdaServico() {
       {currentView === "newPerda" && (
         <div className="space-y-4 animate-fade-in p-2 sm:p-0">
           <Card className="p-4 sm:p-6 bg-gradient-card shadow-card">
-            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(false); }} className="space-y-4">
               {/* Atendente */}
               <div className="space-y-2">
                 <Label className="text-sm sm:text-base font-medium">
@@ -621,11 +630,12 @@ export default function PerdaServico() {
               <div className="grid grid-cols-2 gap-3 pt-4">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={handleBackToList}
-                  className="h-10 sm:h-11 text-sm sm:text-base"
+                  onClick={() => handleSubmit(true)}
+                  disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
+                  className="bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 h-10 sm:h-11 text-sm sm:text-base"
                 >
-                  Cancelar
+                  <SaveAll className="mr-2 h-4 w-4" />
+                  Salvar & Novo
                 </Button>
                 <Button
                   type="submit"
