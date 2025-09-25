@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,42 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/';
 
+  // Prevenir submissão automática ao carregar a página
+  useEffect(() => {
+    // Limpar campos ao carregar a página para evitar auto-submissão
+    const preventAutoSubmit = () => {
+      if (usuario && senha) {
+        console.log('🔄 Limpando campos para prevenir auto-submissão');
+        setUsuario('');
+        setSenha('');
+      }
+    };
+
+    // Executar após um pequeno delay para garantir que a página carregou
+    const timer = setTimeout(preventAutoSubmit, 100);
+    
+    return () => clearTimeout(timer);
+  }, []); // Executar apenas uma vez ao montar o componente
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Verificar se já está fazendo login para evitar múltiplas submissões
+    if (isLoading) {
+      console.log('🔄 Login já em andamento, ignorando nova submissão');
+      return;
+    }
+    
+    // Verificar se os campos estão preenchidos
+    if (!usuario.trim() || !senha.trim()) {
+      setLoginError('Por favor, preencha usuário e senha.');
+      return;
+    }
+    
     setLoginError(''); // Limpar erro anterior
+    
+    console.log('🔐 Iniciando processo de login para:', usuario);
     
     const { error } = await signIn(usuario, senha);
     if (error) {
@@ -43,6 +76,7 @@ const Login = () => {
         setLoginError(error);
       }
     } else {
+      console.log('✅ Login realizado com sucesso, redirecionando...');
       navigate(from, { replace: true });
     }
   };
@@ -247,7 +281,12 @@ const Login = () => {
               </Alert>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form 
+              onSubmit={handleSubmit} 
+              className="space-y-4"
+              autoComplete="off"
+              noValidate
+            >
               <div className="space-y-2">
                 <Label htmlFor="usuario">Usuário</Label>
                 <div className="relative">
@@ -259,6 +298,7 @@ const Login = () => {
                     value={usuario}
                     onChange={(e) => setUsuario(e.target.value)}
                     className="pl-10"
+                    autoComplete="username"
                     required
                   />
                 </div>
@@ -275,6 +315,7 @@ const Login = () => {
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
                     className="pl-10"
+                    autoComplete="current-password"
                     required
                   />
                 </div>
