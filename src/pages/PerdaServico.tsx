@@ -48,7 +48,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// VERSÃO FINAL: 2025-01-25 16:30 - APENAS 2 BOTÕES: Cancelar e Registrar
+// VERSÃO FINAL: 2025-01-25 17:00 - APENAS 2 BOTÕES: Salvar & Novo e Registrar
 export default function PerdaServico() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -627,12 +627,12 @@ export default function PerdaServico() {
               </div>
 
               {/* Botões do formulário */}
-              <div className="grid grid-cols-2 gap-3 pt-4">
+              <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
                   onClick={() => handleSubmit(true)}
                   disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
-                  className="bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 h-10 sm:h-11 text-sm sm:text-base"
+                  className="flex-1 bg-gradient-primary shadow-button hover:shadow-float transition-all duration-200 h-10 sm:h-11 text-sm sm:text-base"
                 >
                   <SaveAll className="mr-2 h-4 w-4" />
                   Salvar & Novo
@@ -640,7 +640,7 @@ export default function PerdaServico() {
                 <Button
                   type="submit"
                   disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
-                  className="bg-red-600 hover:bg-red-700 h-10 sm:h-11 text-sm sm:text-base"
+                  className="flex-1 bg-red-600 hover:bg-red-700 h-10 sm:h-11 text-sm sm:text-base"
                 >
                   {editingPerda ? 'Atualizar' : 'Registrar'}
                 </Button>
