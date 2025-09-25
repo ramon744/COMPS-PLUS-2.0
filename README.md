@@ -61,12 +61,12 @@ Sistema completo para gerenciamento de comps (itens cortesia) do restaurante com
    ```
 
 3. **Configure as variáveis de ambiente**:
-   ```bash
+```bash
    cp .env.example .env
-   ```
-   
+```
+
    Edite o arquivo `.env` com suas configurações:
-   ```env
+```env
    VITE_SUPABASE_URL=sua_url_do_supabase
    VITE_SUPABASE_ANON_KEY=sua_chave_anonima
    VITE_GOOGLE_APPS_SCRIPT_URL=sua_url_do_google_apps_script
@@ -78,7 +78,7 @@ Sistema completo para gerenciamento de comps (itens cortesia) do restaurante com
    ```
 
 5. **Inicie o servidor de desenvolvimento**:
-   ```bash
+```bash
    npm run dev
    ```
 

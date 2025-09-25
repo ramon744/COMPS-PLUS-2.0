@@ -1,5 +1,5 @@
 /**
- * Google Apps Script Notificação Final - COM PDF ESTÁTICO RESTAURADO
+ * Google Apps Script Completo - COM PDF PÚBLICO E LIMPEZA AUTOMÁTICA APÓS 24H
  * Substitua TODO o código no Google Apps Script por este
  */
 
@@ -112,6 +112,15 @@ function doPost(e) {
       return testarTrigger();
     }
     
+    // NOVAS AÇÕES PARA LIMPEZA DE PDFs
+    if (action === 'limparTodosPDFsAntigos') {
+      return ContentService.createTextOutput(JSON.stringify(limparTodosPDFsAntigos())).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'listarPDFsPendentes') {
+      return ContentService.createTextOutput(JSON.stringify(listarPDFsPendentes())).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: 'Ação não reconhecida: ' + action
@@ -135,7 +144,7 @@ function testeConexao() {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
-// Enviar fechamento completo - COM PDF ESTÁTICO RESTAURADO
+// Enviar fechamento completo - COM PDF ESTÁTICO RESTAURADO E LIMPEZA AUTOMÁTICA
 function enviarFechamentoCompleto(data) {
   try {
     console.log('Iniciando fechamento completo...');
@@ -224,8 +233,11 @@ function enviarFechamentoCompleto(data) {
     // 7. Enviar notificação com PDF ESTÁTICO para gerentes
     var notificacaoResult = enviarNotificacaoComPDFCorrigida({ emailData: emailData }, pdfResult.pdfUrl);
     
-    // 8. Agendar limpeza (agora o PDF não será afetado)
+    // 8. Agendar limpeza da planilha (agora o PDF não será afetado)
     agendarLimpeza();
+    
+    // 9. Agendar limpeza da cópia PDF após 24 horas
+    agendarLimpezaPDF(pdfResult.copiaId, pdfResult.nomeArquivo);
     
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
@@ -236,7 +248,8 @@ function enviarFechamentoCompleto(data) {
       nomeArquivo: pdfResult.nomeArquivo,
       xlsxUrl: xlsxResult.xlsxUrl,
       emailResult: emailResult,
-      notificacaoResult: notificacaoResult
+      notificacaoResult: notificacaoResult,
+      limpezaPDFAgendada: true // Indicar que limpeza foi agendada
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
@@ -311,6 +324,205 @@ function gerarPDFEstatico() {
     console.error('❌ Erro ao gerar PDF estático:', error);
     // Fallback para PDF normal se houver erro
     return gerarPDFOtimizado();
+  }
+}
+
+// ===== FUNÇÕES PARA LIMPEZA AUTOMÁTICA DE PDFs APÓS 24 HORAS =====
+
+// Agendar limpeza da cópia PDF após 24 horas
+function agendarLimpezaPDF(copiaId, nomeArquivo) {
+  try {
+    console.log('⏰ Agendando limpeza do PDF após 24 horas...');
+    console.log('📄 Arquivo:', nomeArquivo, 'ID:', copiaId);
+    
+    // Criar trigger para executar após 24 horas
+    var trigger = ScriptApp.newTrigger('limparPDFAntigo')
+      .timeBased()
+      .after(24 * 60 * 60 * 1000) // 24 horas em milissegundos
+      .create();
+    
+    // Armazenar dados do arquivo para limpeza posterior
+    var dadosLimpeza = {
+      copiaId: copiaId,
+      nomeArquivo: nomeArquivo,
+      dataCriacao: new Date().toISOString(),
+      triggerId: trigger.getUniqueId()
+    };
+    
+    // Salvar dados em PropertiesService para recuperar depois
+    var properties = PropertiesService.getScriptProperties();
+    var chave = 'limpeza_pdf_' + copiaId;
+    properties.setProperty(chave, JSON.stringify(dadosLimpeza));
+    
+    console.log('✅ Limpeza de PDF agendada para 24 horas');
+    console.log('🆔 ID do trigger:', trigger.getUniqueId());
+    console.log('🔑 Chave salva:', chave);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Erro ao agendar limpeza do PDF:', error);
+    return false;
+  }
+}
+
+// Executar limpeza do PDF antigo (chamada pelo trigger após 24h)
+function limparPDFAntigo() {
+  try {
+    console.log('🗑️ Iniciando limpeza de PDFs antigos...');
+    
+    var properties = PropertiesService.getScriptProperties();
+    var todasAsPropriedades = properties.getProperties();
+    var arquivosRemovidos = 0;
+    var erros = 0;
+    
+    // Buscar todas as chaves de limpeza de PDF
+    for (var chave in todasAsPropriedades) {
+      if (chave.startsWith('limpeza_pdf_')) {
+        try {
+          var dados = JSON.parse(todasAsPropriedades[chave]);
+          var dataCriacao = new Date(dados.dataCriacao);
+          var agora = new Date();
+          var diferencaHoras = (agora - dataCriacao) / (1000 * 60 * 60);
+          
+          console.log('📄 Verificando arquivo:', dados.nomeArquivo);
+          console.log('⏰ Criado há:', diferencaHoras.toFixed(2), 'horas');
+          
+          // Se passou mais de 24 horas, deletar
+          if (diferencaHoras >= 24) {
+            try {
+              var arquivo = DriveApp.getFileById(dados.copiaId);
+              arquivo.setTrashed(true);
+              console.log('✅ Arquivo deletado:', dados.nomeArquivo);
+              arquivosRemovidos++;
+            } catch (fileError) {
+              console.log('⚠️ Arquivo já foi deletado ou não existe:', dados.nomeArquivo);
+            }
+            
+            // Remover propriedade
+            properties.deleteProperty(chave);
+            console.log('🧹 Propriedade removida:', chave);
+          }
+        } catch (parseError) {
+          console.error('❌ Erro ao processar dados:', chave, parseError);
+          erros++;
+        }
+      }
+    }
+    
+    console.log('🎯 Limpeza concluída:');
+    console.log('   📄 Arquivos removidos:', arquivosRemovidos);
+    console.log('   ❌ Erros:', erros);
+    
+    // Auto-excluir este trigger após execução
+    var triggers = ScriptApp.getProjectTriggers();
+    for (var i = triggers.length - 1; i >= 0; i--) {
+      var trigger = triggers[i];
+      if (trigger.getHandlerFunction() === 'limparPDFAntigo') {
+        ScriptApp.deleteTrigger(trigger);
+        console.log('🗑️ Trigger de limpeza auto-excluído');
+        break;
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro na limpeza de PDFs:', error);
+  }
+}
+
+// Função para limpar TODOS os PDFs antigos manualmente (para emergência)
+function limparTodosPDFsAntigos() {
+  try {
+    console.log('🧹 LIMPEZA MANUAL: Removendo todos os PDFs antigos...');
+    
+    var properties = PropertiesService.getScriptProperties();
+    var todasAsPropriedades = properties.getProperties();
+    var arquivosRemovidos = 0;
+    
+    for (var chave in todasAsPropriedades) {
+      if (chave.startsWith('limpeza_pdf_')) {
+        try {
+          var dados = JSON.parse(todasAsPropriedades[chave]);
+          
+          try {
+            var arquivo = DriveApp.getFileById(dados.copiaId);
+            arquivo.setTrashed(true);
+            console.log('✅ Arquivo deletado:', dados.nomeArquivo);
+            arquivosRemovidos++;
+          } catch (fileError) {
+            console.log('⚠️ Arquivo já foi deletado:', dados.nomeArquivo);
+          }
+          
+          properties.deleteProperty(chave);
+        } catch (error) {
+          console.error('❌ Erro ao processar:', chave, error);
+        }
+      }
+    }
+    
+    console.log('🎯 Limpeza manual concluída - Arquivos removidos:', arquivosRemovidos);
+    
+    return {
+      success: true,
+      arquivosRemovidos: arquivosRemovidos,
+      message: 'Limpeza manual concluída'
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro na limpeza manual:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+// Função para listar PDFs pendentes de limpeza (para debug)
+function listarPDFsPendentes() {
+  try {
+    console.log('📋 Listando PDFs pendentes de limpeza...');
+    
+    var properties = PropertiesService.getScriptProperties();
+    var todasAsPropriedades = properties.getProperties();
+    var pdfsPendentes = [];
+    
+    for (var chave in todasAsPropriedades) {
+      if (chave.startsWith('limpeza_pdf_')) {
+        try {
+          var dados = JSON.parse(todasAsPropriedades[chave]);
+          var dataCriacao = new Date(dados.dataCriacao);
+          var agora = new Date();
+          var diferencaHoras = (agora - dataCriacao) / (1000 * 60 * 60);
+          
+          pdfsPendentes.push({
+            nome: dados.nomeArquivo,
+            id: dados.copiaId,
+            criadoEm: dados.dataCriacao,
+            horasAtras: diferencaHoras.toFixed(2),
+            prontoParaLimpeza: diferencaHoras >= 24
+          });
+        } catch (error) {
+          console.error('❌ Erro ao processar:', chave, error);
+        }
+      }
+    }
+    
+    console.log('📋 PDFs pendentes encontrados:', pdfsPendentes.length);
+    pdfsPendentes.forEach(function(pdf, index) {
+      console.log('   ' + (index + 1) + '. ' + pdf.nome + ' (' + pdf.horasAtras + 'h atrás)');
+    });
+    
+    return {
+      success: true,
+      total: pdfsPendentes.length,
+      pdfs: pdfsPendentes
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao listar PDFs pendentes:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -1381,7 +1593,6 @@ function gerarXLSXInterno() {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 }
-
 
 // Função para testar busca de perdas - DEBUG
 function testarPerdas(data) {
