@@ -1,15 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signOut: () => Promise<void>;
   isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,337 +17,191 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Função para carregar dados do perfil - SIMPLIFICADA
-  const loadUserProfile = async (authUser: any) => {
-    if (!authUser?.email) return authUser;
-
+  // Função de login simplificada
+  const signIn = async (email: string, password: string) => {
     try {
-      console.log('👤 Tentando carregar perfil para:', authUser.email);
+      setIsLoading(true);
       
-      // Timeout reduzido para 3 segundos
-      const profilePromise = supabase
-        .from('profiles')
-        .select('nome, email, role')
-        .eq('email', authUser.email)
-        .single();
-
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na busca do perfil')), 3000);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
-
-      if (!error && profile) {
-        console.log('✅ Perfil carregado:', profile.nome, profile.role);
-        // Mesclar dados do auth com dados do perfil
-        return {
-          ...authUser,
-          user_metadata: {
-            ...authUser.user_metadata,
-            name: profile.nome || authUser.user_metadata?.name || authUser.email,
-            role: profile.role
-          }
-        };
-      } else {
-        console.log('⚠️ Perfil não encontrado, usando dados básicos do auth');
+      if (error) {
+        console.error('❌ Erro no login:', error);
+        return { error: error.message };
       }
-    } catch (error) {
-      console.log('⚠️ Erro ao carregar perfil, usando dados básicos:', error);
+
+      if (data.user && data.session) {
+        console.log('✅ Login realizado com sucesso:', data.user.email);
+        // O estado será atualizado automaticamente pelo listener
+        return {};
+      }
+
+      return { error: 'Erro desconhecido no login' };
+    } catch (error: any) {
+      console.error('❌ Erro inesperado no login:', error);
+      return { error: 'Erro inesperado. Tente novamente.' };
+    } finally {
+      setIsLoading(false);
     }
-
-    // Retornar usuário básico se não conseguir carregar perfil
-    return {
-      ...authUser,
-      user_metadata: {
-        ...authUser.user_metadata,
-        name: authUser.user_metadata?.name || authUser.email,
-        role: 'user' // role padrão
-      }
-    };
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    let currentlyLoading = true;
-    
-    // Timeout de segurança para evitar loading infinito - reduzido para 8 segundos
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted && currentlyLoading) {
-        console.warn('⚠️ Timeout de segurança ativado - forçando setIsLoading(false)');
-        // NÃO limpar a sessão no timeout, apenas parar o loading
-        setIsLoading(false);
-        currentlyLoading = false;
+  // Função de logout simplificada
+  const signOut = async () => {
+    try {
+      console.log('🔄 Iniciando logout...');
+      
+      // Verificar se há sessão ativa
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (currentSession) {
+        const { error } = await supabase.auth.signOut();
+        if (error && !error.message.includes('session_not_found') && !error.message.includes('Auth session missing')) {
+          console.error('❌ Erro no logout:', error);
+          throw error;
+        }
       }
-    }, 8000); // 8 segundos máximo
+      
+      // Limpar estado local sempre
+      setUser(null);
+      setSession(null);
+      
+      console.log('✅ Logout realizado com sucesso');
+      
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Erro no logout:', error);
+      // Mesmo com erro, limpar estado local
+      setUser(null);
+      setSession(null);
+      
+      toast({
+        title: "Logout realizado",
+        description: "Sessão encerrada.",
+      });
+    }
+  };
 
-    const handleAuthStateChange = async (event: any, session: any) => {
+  // Inicialização e listener de mudanças de auth
+  useEffect(() => {
+    let mounted = true;
+
+    // Função para processar mudanças de autenticação
+    const handleAuthChange = async (event: string, session: Session | null) => {
+      if (!mounted) return;
+
+      console.log('🔐 Auth change:', event, !!session);
+
       try {
-        if (!isMounted) return;
-        
-        console.log('🔐 Auth state change:', event, !!session, session?.user?.id);
-        
-        setSession(session);
-        
         if (session?.user) {
-          const enrichedUser = await loadUserProfile(session.user);
-          if (isMounted) {
-            setUser(enrichedUser);
-          }
+          // Usuário logado
+          setSession(session);
+          setUser(session.user);
+          console.log('✅ Usuário autenticado:', session.user.email);
         } else {
-          if (isMounted) {
-            setUser(null);
-          }
-        }
-        
-        if (isMounted) {
-          setIsLoading(false);
-          currentlyLoading = false;
-          clearTimeout(safetyTimeout);
-        }
-      } catch (error) {
-        console.error('Erro no handleAuthStateChange:', error);
-        if (isMounted) {
-          // Em caso de erro, limpar tudo e parar o loading
+          // Usuário deslogado
           setSession(null);
           setUser(null);
+          console.log('🔐 Usuário desautenticado');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao processar mudança de auth:', error);
+        setSession(null);
+        setUser(null);
+      } finally {
+        if (mounted) {
           setIsLoading(false);
-          currentlyLoading = false;
-          clearTimeout(safetyTimeout);
         }
       }
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    // Configurar listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Check for existing session
-    const initializeSession = async () => {
+    // Verificar sessão inicial
+    const initializeAuth = async () => {
       try {
-        console.log('🔄 Inicializando sessão...');
+        console.log('🔄 Inicializando autenticação...');
         
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Erro ao obter sessão:', error);
-          // Só limpar se for um erro crítico, não se for apenas sessão expirada
-          if (error.message?.includes('Auth session missing') || 
-              error.message?.includes('session_not_found')) {
-            console.log('🔐 Nenhuma sessão encontrada, usuário não logado');
-          } else {
-            console.error('🔐 Erro crítico na sessão:', error);
-          }
-          
-          if (isMounted) {
+          console.error('❌ Erro ao obter sessão inicial:', error);
+          if (mounted) {
             setSession(null);
             setUser(null);
             setIsLoading(false);
-            currentlyLoading = false;
-            clearTimeout(safetyTimeout);
           }
           return;
         }
-        
-        if (!isMounted) return;
-        
-        console.log('🔐 Sessão encontrada:', !!session, session?.user?.id);
-        setSession(session);
-        
-        if (session?.user) {
-          console.log('👤 Carregando perfil do usuário...');
-          const enrichedUser = await loadUserProfile(session.user);
-          if (isMounted) {
-            setUser(enrichedUser);
-            console.log('✅ Usuário logado:', enrichedUser.email);
-          }
-        } else {
-          console.log('🔐 Nenhuma sessão ativa');
-          if (isMounted) {
+
+        if (mounted) {
+          if (session?.user) {
+            console.log('✅ Sessão existente encontrada:', session.user.email);
+            setSession(session);
+            setUser(session.user);
+          } else {
+            console.log('🔐 Nenhuma sessão ativa');
+            setSession(null);
             setUser(null);
           }
-        }
-        
-        if (isMounted) {
           setIsLoading(false);
-          currentlyLoading = false;
-          clearTimeout(safetyTimeout);
         }
       } catch (error) {
-        console.error('Erro na inicialização da sessão:', error);
-        if (isMounted) {
-          // Em caso de erro, apenas parar o loading, não limpar a sessão
+        console.error('❌ Erro na inicialização:', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
           setIsLoading(false);
-          currentlyLoading = false;
-          clearTimeout(safetyTimeout);
         }
       }
     };
 
-    initializeSession();
-
-    // Verificação periódica da sessão para detectar problemas (reduzida para 30 segundos)
-    const sessionCheckInterval = setInterval(async () => {
-      if (!isMounted) return;
-      
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Erro na verificação periódica da sessão:', error);
-          if (isMounted && currentlyLoading) {
-            console.log('🔄 Forçando parada do loading devido a erro de sessão');
-            setIsLoading(false);
-            currentlyLoading = false;
-            clearTimeout(safetyTimeout);
-          }
-        }
-      } catch (error) {
-        console.error('Erro na verificação periódica:', error);
-        if (isMounted && currentlyLoading) {
-          console.log('🔄 Forçando parada do loading devido a erro de conectividade');
-          setIsLoading(false);
-          currentlyLoading = false;
-          clearTimeout(safetyTimeout);
-        }
+    // Timeout de segurança
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && isLoading) {
+        console.warn('⚠️ Timeout de segurança - forçando fim do loading');
+        setIsLoading(false);
       }
-    }, 30000); // Verificar a cada 30 segundos (reduzido de 5s)
+    }, 5000); // 5 segundos máximo
 
+    // Inicializar
+    initializeAuth();
+
+    // Cleanup
     return () => {
-      isMounted = false;
+      mounted = false;
       clearTimeout(safetyTimeout);
-      clearInterval(sessionCheckInterval);
       subscription.unsubscribe();
     };
   }, []);
 
-
-
-  const signUp = async (email: string, password: string, name: string) => {
-    try {
-      if (import.meta.env.DEV) {
-        console.log('Criando conta para:', email);
-      }
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name
-          }
-        }
-      });
-
-      if (error) {
-        if (import.meta.env.DEV) {
-          console.log('Erro ao criar conta:', error.message);
-        }
-        return { error: error.message };
-      }
-
-      if (import.meta.env.DEV) {
-        console.log('Conta criada com sucesso');
-      }
-      toast.success('Conta criada com sucesso!');
-      return { error: null };
-    } catch (error) {
-      console.error('Erro interno na criação da conta');
-      return { error: "Erro interno na criação da conta" };
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      if (import.meta.env.DEV) {
-        console.log('Tentativa de login');
-      }
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        if (import.meta.env.DEV) {
-          console.log('Erro no login:', error.message);
-        }
-        return { error: error.message };
-      }
-
-      if (import.meta.env.DEV) {
-        console.log('Login realizado com sucesso');
-      }
-      toast.success('Login realizado com sucesso!');
-      return { error: null };
-    } catch (error) {
-      console.error('Erro interno no login');
-      return { error: "Erro interno do sistema" };
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      // Check if there's a current session before attempting logout
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        // No active session or error getting session, just clear local state
-        console.log('🔐 Nenhuma sessão ativa encontrada, limpando estado local');
-        setSession(null);
-        setUser(null);
-        toast.success('Logout realizado com sucesso!');
-        return;
-      }
-
-      // Attempt to sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        // Handle specific auth errors gracefully
-        if (error.message?.includes('Auth session missing') || 
-            error.message?.includes('session_not_found') ||
-            error.status === 403) {
-          console.log('🔐 Sessão já expirada, limpando estado local');
-        } else {
-          console.error('Logout error:', error);
-        }
-      }
-      
-      // Always clear local state regardless of Supabase response
-      setSession(null);
-      setUser(null);
-      toast.success('Logout realizado com sucesso!');
-      
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      
-      // Handle specific error types
-      if (error.message?.includes('Auth session missing') || 
-          error.message?.includes('session_not_found')) {
-        console.log('🔐 Sessão já expirada durante logout');
-      }
-      
-      // Always clear local state even on error
-      setSession(null);
-      setUser(null);
-      toast.success('Logout realizado com sucesso!');
-    }
+  const value = {
+    user,
+    session,
+    isLoading,
+    signIn,
+    signOut,
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, isLoading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // Log mais detalhado para debug
-    console.error('🚨 useAuth called outside AuthProvider context');
-    console.trace('Stack trace for useAuth error');
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   return context;
-};
+}
