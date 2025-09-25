@@ -19,10 +19,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Função de login simplificada
+  // Função de login real com Supabase
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log('🔄 Tentando login para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -49,23 +50,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Função de logout simplificada
+  // Função de logout real
   const signOut = async () => {
     try {
       console.log('🔄 Iniciando logout...');
       
-      // Verificar se há sessão ativa
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (currentSession) {
-        const { error } = await supabase.auth.signOut();
-        if (error && !error.message.includes('session_not_found') && !error.message.includes('Auth session missing')) {
-          console.error('❌ Erro no logout:', error);
-          throw error;
-        }
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Erro no logout:', error);
+        throw error;
       }
       
-      // Limpar estado local sempre
+      // Limpar estado local
       setUser(null);
       setSession(null);
       
@@ -106,16 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user);
           console.log('✅ Usuário autenticado:', session.user.email);
         } else {
-          // Usuário deslogado - só limpar se for um logout real, não um refresh
-          if (event === 'SIGNED_OUT') {
-            setSession(null);
-            setUser(null);
-            console.log('🔐 Usuário deslogado');
-          }
+          // Usuário deslogado
+          setSession(null);
+          setUser(null);
+          console.log('🔐 Usuário deslogado');
         }
       } catch (error) {
         console.error('❌ Erro ao processar mudança de auth:', error);
-        // Não limpar estado em caso de erro para evitar logout acidental
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -123,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Verificar sessão inicial PRIMEIRO
+    // Verificar sessão inicial
     const initializeAuth = async () => {
       try {
         console.log('🔄 Inicializando autenticação...');
@@ -168,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Timeout de segurança - forçando fim do loading');
         setIsLoading(false);
       }
-    }, 3000); // 3 segundos máximo
+    }, 5000); // 5 segundos máximo
 
     // Inicializar PRIMEIRO
     initializeAuth();

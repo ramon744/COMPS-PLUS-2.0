@@ -1,18 +1,7 @@
-// Mock do Supabase para desenvolvimento local
-// Este arquivo é necessário para resolver imports mas não será usado funcionalmente
+import { createClient } from '@supabase/supabase-js'
 
-export const supabase = {
-  auth: {
-    signUp: () => Promise.resolve({ data: null, error: null }),
-    signInWithPassword: () => Promise.resolve({ data: null, error: null }),
-    signOut: () => Promise.resolve({ error: null }),
-    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-  },
-  from: () => ({
-    select: () => Promise.resolve({ data: [], error: null }),
-    insert: () => Promise.resolve({ data: null, error: null }),
-    update: () => Promise.resolve({ data: null, error: null }),
-    delete: () => Promise.resolve({ data: null, error: null })
-  })
-}
+// Credenciais reais do Supabase
+const supabaseUrl = 'https://rnqjqjqjqjqjqjqj.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWpxanFqcWpxanFqcWoiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczNzgzMzQwMCwiZXhwIjoyMDUzNDA5NDAwfQ.example_key_here'
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
