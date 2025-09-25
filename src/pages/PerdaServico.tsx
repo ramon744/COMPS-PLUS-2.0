@@ -47,6 +47,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+// Atualizado: 2025-01-25 16:25 - Removido botão Salvar & Novo
 export default function PerdaServico() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -616,7 +617,7 @@ export default function PerdaServico() {
                 )}
               </div>
 
-              {/* Botões */}
+              {/* Botões - Apenas Cancelar e Registrar */}
               <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
