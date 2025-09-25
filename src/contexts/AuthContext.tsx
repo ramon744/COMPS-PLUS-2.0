@@ -264,29 +264,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       // Check if there's a current session before attempting logout
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
-        // No active session, just clear local state
+      if (sessionError || !session) {
+        // No active session or error getting session, just clear local state
+        console.log('🔐 Nenhuma sessão ativa encontrada, limpando estado local');
         setSession(null);
         setUser(null);
         toast.success('Logout realizado com sucesso!');
         return;
       }
 
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
-        console.error('Logout error:', error);
-        // Even if there's an error, clear local state
-        setSession(null);
-        setUser(null);
-        toast.success('Logout realizado com sucesso!');
-      } else {
-        toast.success('Logout realizado com sucesso!');
+        // Handle specific auth errors gracefully
+        if (error.message?.includes('Auth session missing') || 
+            error.message?.includes('session_not_found') ||
+            error.status === 403) {
+          console.log('🔐 Sessão já expirada, limpando estado local');
+        } else {
+          console.error('Logout error:', error);
+        }
       }
-    } catch (error) {
+      
+      // Always clear local state regardless of Supabase response
+      setSession(null);
+      setUser(null);
+      toast.success('Logout realizado com sucesso!');
+      
+    } catch (error: any) {
       console.error('Logout error:', error);
-      // Clear local state anyway
+      
+      // Handle specific error types
+      if (error.message?.includes('Auth session missing') || 
+          error.message?.includes('session_not_found')) {
+        console.log('🔐 Sessão já expirada durante logout');
+      }
+      
+      // Always clear local state even on error
       setSession(null);
       setUser(null);
       toast.success('Logout realizado com sucesso!');

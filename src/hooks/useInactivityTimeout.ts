@@ -61,8 +61,14 @@ export function useInactivityTimeout(options: Partial<InactivityTimeoutOptions> 
       });
       
       await signOut();
-    } catch (error) {
-      console.error('Erro no logout automático:', error);
+    } catch (error: any) {
+      // Silenciar erros de sessão já expirada
+      if (error.message?.includes('Auth session missing') || 
+          error.message?.includes('session_not_found')) {
+        console.log('🔐 Sessão já expirada durante logout automático');
+      } else {
+        console.error('Erro no logout automático:', error);
+      }
     }
   }, [signOut, authError]);
 
