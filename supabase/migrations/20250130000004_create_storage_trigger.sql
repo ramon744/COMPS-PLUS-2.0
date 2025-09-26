@@ -67,7 +67,7 @@ CREATE TRIGGER pdf_upload_trigger
 
 -- Configurar URL do Supabase (ajustar conforme necessário)
 -- Esta configuração pode ser feita via SQL ou via variável de ambiente
--- ALTER SYSTEM SET app.settings.supabase_url = 'dplfodkrsaffzljmteub.supabase.co';
+-- ALTER SYSTEM SET app.settings.supabase_url = 'hivxzwvqzfelhbijiuzm.supabase.co';
 
 -- Função para testar o trigger manualmente
 CREATE OR REPLACE FUNCTION test_pdf_trigger(filename TEXT, closing_id UUID)
@@ -75,7 +75,7 @@ RETURNS TEXT AS $$
 DECLARE
   v_pdf_url TEXT;
 BEGIN
-  v_pdf_url := 'https://dplfodkrsaffzljmteub.supabase.co/storage/v1/object/public/reports/' || filename;
+  v_pdf_url := 'https://hivxzwvqzfelhbijiuzm.supabase.co/storage/v1/object/public/reports/' || filename;
   
   -- Simular o trigger chamando notify_pdf_ready
   PERFORM notify_pdf_ready(closing_id, v_pdf_url);
