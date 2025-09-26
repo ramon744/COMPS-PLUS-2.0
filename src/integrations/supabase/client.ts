@@ -5,23 +5,34 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Validação de variáveis de ambiente em desenvolvimento
-if (import.meta.env.DEV) {
-  if (!SUPABASE_URL) {
-    console.error('❌ VITE_SUPABASE_URL não configurada');
-  }
-  if (!SUPABASE_PUBLISHABLE_KEY) {
-    console.error('❌ VITE_SUPABASE_PUBLISHABLE_KEY não configurada');
-  }
+// Validação robusta de variáveis de ambiente
+console.log('🔍 Verificando variáveis de ambiente Supabase...');
+console.log('VITE_SUPABASE_URL:', SUPABASE_URL ? '✅ Configurada' : '❌ Não configurada');
+console.log('VITE_SUPABASE_PUBLISHABLE_KEY:', SUPABASE_PUBLISHABLE_KEY ? '✅ Configurada' : '❌ Não configurada');
+
+if (!SUPABASE_URL) {
+  console.error('❌ VITE_SUPABASE_URL não configurada');
+  throw new Error('VITE_SUPABASE_URL é obrigatória');
 }
 
-// Não usar fallbacks hardcoded em produção
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  console.error('❌ VITE_SUPABASE_PUBLISHABLE_KEY não configurada');
+  throw new Error('VITE_SUPABASE_PUBLISHABLE_KEY é obrigatória');
+}
+
+// Validar formato das variáveis
+if (!SUPABASE_URL.startsWith('https://')) {
+  throw new Error('VITE_SUPABASE_URL deve começar com https://');
+}
+
+if (!SUPABASE_PUBLISHABLE_KEY.startsWith('eyJ')) {
+  throw new Error('VITE_SUPABASE_PUBLISHABLE_KEY deve ser um JWT válido');
+}
+
 const url = SUPABASE_URL;
 const key = SUPABASE_PUBLISHABLE_KEY;
 
-if (!url || !key) {
-  throw new Error('Configuração do Supabase não encontrada. Configure as variáveis de ambiente.');
-}
+console.log('✅ Variáveis de ambiente validadas com sucesso');
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -48,13 +59,16 @@ export const supabase = createClient<Database>(url, key, {
   },
 });
 
-// Teste de conexão apenas em desenvolvimento
-if (import.meta.env.DEV) {
-  supabase.auth.getSession().then(({ error }) => {
-    if (error) {
-      console.error('❌ Erro na conexão Supabase:', error.message);
-    }
-  }).catch(() => {
-    // Silenciar erros em produção
-  });
-}
+// Teste de conexão em todos os ambientes
+console.log('🔗 Testando conexão com Supabase...');
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('❌ Erro na conexão Supabase:', error.message);
+    console.error('❌ Detalhes do erro:', error);
+  } else {
+    console.log('✅ Conexão com Supabase estabelecida');
+    console.log('📊 Sessão:', data.session ? 'Ativa' : 'Não ativa');
+  }
+}).catch((error) => {
+  console.error('❌ Erro crítico na conexão Supabase:', error);
+});
