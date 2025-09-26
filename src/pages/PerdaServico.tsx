@@ -47,6 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Layout } from "@/components/Layout";
 
 export default function PerdaServico() {
   const { user } = useAuth();
@@ -259,40 +260,19 @@ export default function PerdaServico() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <Layout title="Perdas de Serviço" showBack={false}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando perdas de serviço...</p>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header simplificado sem ActiveManagerGuard */}
-      <header className="bg-gradient-primary shadow-float sticky top-0 z-50">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            {showBack && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleBackToDashboard} 
-                className="text-primary-foreground hover:bg-white/10 h-8 w-8 sm:h-9 sm:w-9 p-0"
-              >
-                <span className="text-sm sm:text-base">←</span>
-              </Button>
-            )}
-            <h1 className="text-lg sm:text-xl font-bold text-primary-foreground">{getTitle()}</h1>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+    <Layout title={getTitle()} showBack={showBack} onBack={handleBackToDashboard}>
       {currentView === "list" && (
         <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
           {/* Header com botão de adicionar */}
@@ -645,7 +625,6 @@ export default function PerdaServico() {
           </Card>
         </div>
       )}
-      </main>
-    </div>
+    </Layout>
   );
 }
