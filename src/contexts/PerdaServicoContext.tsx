@@ -90,10 +90,10 @@ export function PerdaServicoProvider({ children }: { children: React.ReactNode }
     try {
       setIsLoading(true);
       
+      // Remover filtro por user_id - perdas visíveis para todos
       const { data, error } = await supabase
         .from('perda_servico')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -164,7 +164,6 @@ export function PerdaServicoProvider({ children }: { children: React.ReactNode }
         .from('perda_servico')
         .update(data)
         .eq('id', id)
-        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -198,8 +197,7 @@ export function PerdaServicoProvider({ children }: { children: React.ReactNode }
       const { error } = await supabase
         .from('perda_servico')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) {
         throw error;
@@ -229,7 +227,6 @@ export function PerdaServicoProvider({ children }: { children: React.ReactNode }
       const { data, error } = await supabase
         .from('perda_servico')
         .select('*')
-        .eq('user_id', user.id)
         .gte('created_at', startDate)
         .lte('created_at', endDate)
         .order('created_at', { ascending: false });
@@ -252,7 +249,6 @@ export function PerdaServicoProvider({ children }: { children: React.ReactNode }
       const { data, error } = await supabase
         .from('perda_servico')
         .select('*')
-        .eq('user_id', user.id)
         .ilike('atendente_nome', `%${atendente}%`)
         .order('created_at', { ascending: false });
 
