@@ -640,13 +640,6 @@ export default function PerdaServico() {
                   <SaveAll className="h-4 w-4 mr-2" />
                   Salvar & Novo
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={!formData.atendente_nome || !formData.numero_mesa || !formData.motivo || formData.motivo.length < 5}
-                  className="flex-1 bg-red-600 hover:bg-red-700 h-10 sm:h-11 text-sm sm:text-base"
-                >
-                  {editingPerda ? 'Atualizar' : 'Registrar'}
-                </Button>
               </div>
             </form>
           </Card>
