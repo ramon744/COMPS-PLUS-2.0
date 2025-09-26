@@ -20,6 +20,39 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subW
 import { ptBR } from "date-fns/locale";
 
 const Index = () => {
+  const { user } = useAuth();
+  
+  console.log('🔍 Index: Carregando dashboard, user:', !!user);
+  
+  // Verificação simples de autenticação
+  if (!user) {
+    console.log('🔍 Index: Usuário não encontrado, redirecionando para login');
+    window.location.href = '/login';
+    return null;
+  }
+  
+  console.log('🔍 Index: Usuário autenticado, continuando...');
+  
+  // Interceptar erros que podem causar reload
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('🚨 Erro capturado em Index:', event.error);
+      event.preventDefault(); // Evitar reload
+    };
+    
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('🚨 Promise rejeitada em Index:', event.reason);
+      event.preventDefault(); // Evitar reload
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
   
   const { currentOperationalDay, formatOperationalDayDisplay, getCurrentTurn, getBrazilTimeString } = useOperationalDay();
   const { 

@@ -9,11 +9,12 @@ interface ActiveManagerGuardProps {
 export function ActiveManagerGuard({ children, fallback }: ActiveManagerGuardProps) {
   const { user } = useAuth();
 
-  // Se não há usuário, não renderizar nada (ProtectedRoute já cuida disso)
+  // Versão simplificada - apenas verificar se há usuário logado
+  // As permissões são verificadas no login
   if (!user) {
-    return fallback || null;
+    return null;
   }
 
-  // Assumir que usuário logado tem permissões (simplificado)
+  // Se há usuário, permitir acesso
   return <>{children}</>;
 }
