@@ -41,17 +41,27 @@ interface FilterParams {
   selectedType: string;
 }
 
+interface PerdaServicoData {
+  id: string;
+  atendente_nome: string;
+  numero_mesa: string;
+  motivo: string;
+  created_at: string;
+  dia_operacional?: string;
+}
+
 interface ExportData {
   comps: CompData[];
   compTypes: CompType[];
   waiters: Waiter[];
   managers: Manager[];
+  perdas?: PerdaServicoData[];
   filters: FilterParams;
   formatCurrency: (value: number) => string;
 }
 
 export function exportToExcel(data: ExportData) {
-  const { comps, compTypes, waiters, managers, filters, formatCurrency } = data;
+  const { comps, compTypes, waiters, managers, perdas, filters, formatCurrency } = data;
   
   // Criar workbook
   const workbook = XLSX.utils.book_new();
@@ -83,6 +93,26 @@ export function exportToExcel(data: ExportData) {
   const porTipoData = createPorTipoSheet(filteredComps, compTypes, formatCurrency);
   const porTipoSheet = XLSX.utils.json_to_sheet(porTipoData);
   XLSX.utils.book_append_sheet(workbook, porTipoSheet, 'Por Tipo');
+  
+  // 6. ABA PERDAS DE SERVIÇO (se houver dados)
+  if (perdas && perdas.length > 0) {
+    const perdasFiltradas = filterPerdas(perdas, filters);
+    
+    // 6.1. ABA RESUMO PERDAS
+    const resumoPerdasData = createResumoPerdasSheet(perdasFiltradas, filters);
+    const resumoPerdasSheet = XLSX.utils.json_to_sheet(resumoPerdasData);
+    XLSX.utils.book_append_sheet(workbook, resumoPerdasSheet, 'Resumo Perdas');
+    
+    // 6.2. ABA PERDAS DETALHADO
+    const perdasDetalhadoData = createPerdasDetalhadoSheet(perdasFiltradas);
+    const perdasDetalhadoSheet = XLSX.utils.json_to_sheet(perdasDetalhadoData);
+    XLSX.utils.book_append_sheet(workbook, perdasDetalhadoSheet, 'Perdas Detalhado');
+    
+    // 6.3. ABA PERDAS POR ATENDENTE
+    const perdasPorAtendenteData = createPerdasPorAtendenteSheet(perdasFiltradas);
+    const perdasPorAtendenteSheet = XLSX.utils.json_to_sheet(perdasPorAtendenteData);
+    XLSX.utils.book_append_sheet(workbook, perdasPorAtendenteSheet, 'Perdas por Atendente');
+  }
   
   // Gerar nome do arquivo
   const fileName = generateFileName(filters);
@@ -236,6 +266,106 @@ function getReportTypeLabel(reportType: string): string {
     case 'personalizado': return 'Personalizado';
     default: return reportType;
   }
+}
+
+function filterPerdas(perdas: PerdaServicoData[], filters: FilterParams) {
+  // Filtrar por data
+  const dateRange = getDateRange(filters.startDate, filters.endDate, filters.reportType);
+  return perdas.filter(perda => {
+    const perdaDiaOperacional = calculateOperationalDay(perda.created_at);
+    return dateRange.includes(perdaDiaOperacional);
+  });
+}
+
+function calculateOperationalDay(createdAt: string): string {
+  const date = new Date(createdAt);
+  
+  // Se foi criado antes das 5h, pertence ao dia operacional anterior
+  if (date.getHours() < 5) {
+    const previousDay = new Date(date);
+    previousDay.setDate(previousDay.getDate() - 1);
+    return previousDay.toISOString().split('T')[0];
+  }
+  
+  return date.toISOString().split('T')[0];
+}
+
+function createResumoPerdasSheet(perdas: PerdaServicoData[], filters: FilterParams) {
+  const totalPerdas = perdas.length;
+  const atendentesUnicos = new Set(perdas.map(p => p.atendente_nome)).size;
+  const mesasUnicas = new Set(perdas.map(p => p.numero_mesa)).size;
+  
+  // Agrupar por motivo
+  const motivosCount = perdas.reduce((acc, perda) => {
+    acc[perda.motivo] = (acc[perda.motivo] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const motivoMaisComum = Object.entries(motivosCount)
+    .sort(([,a], [,b]) => b - a)[0];
+  
+  const resumoData = [
+    { 'Métrica': 'Período', 'Valor': `${filters.startDate} a ${filters.endDate}` },
+    { 'Métrica': 'Tipo de Relatório', 'Valor': getReportTypeLabel(filters.reportType) },
+    { 'Métrica': '', 'Valor': '' },
+    { 'Métrica': 'Total de Perdas', 'Valor': totalPerdas },
+    { 'Métrica': 'Atendentes Afetados', 'Valor': atendentesUnicos },
+    { 'Métrica': 'Mesas Afetadas', 'Valor': mesasUnicas },
+    { 'Métrica': 'Motivo Mais Comum', 'Valor': motivoMaisComum ? `${motivoMaisComum[0]} (${motivoMaisComum[1]} ocorrências)` : 'N/A' },
+    { 'Métrica': '', 'Valor': '' },
+    { 'Métrica': 'Data de Geração', 'Valor': format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR }) }
+  ];
+  
+  return resumoData;
+}
+
+function createPerdasDetalhadoSheet(perdas: PerdaServicoData[]) {
+  const detalhadoData = perdas.map(perda => {
+    const dataOperacional = calculateOperationalDay(perda.created_at);
+    
+    return {
+      'Data Operacional': format(new Date(dataOperacional), 'dd/MM/yyyy', { locale: ptBR }),
+      'Atendente': perda.atendente_nome,
+      'Número da Mesa': perda.numero_mesa,
+      'Motivo': perda.motivo,
+      'Data/Hora Registro': format(new Date(perda.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+    };
+  }).sort((a, b) => new Date(b['Data Operacional']).getTime() - new Date(a['Data Operacional']).getTime());
+  
+  return detalhadoData;
+}
+
+function createPerdasPorAtendenteSheet(perdas: PerdaServicoData[]) {
+  const atendenteStats = perdas.reduce((acc, perda) => {
+    if (!acc[perda.atendente_nome]) {
+      acc[perda.atendente_nome] = {
+        atendente: perda.atendente_nome,
+        totalPerdas: 0,
+        mesasAfetadas: new Set(),
+        motivos: {} as Record<string, number>
+      };
+    }
+    
+    acc[perda.atendente_nome].totalPerdas++;
+    acc[perda.atendente_nome].mesasAfetadas.add(perda.numero_mesa);
+    acc[perda.atendente_nome].motivos[perda.motivo] = (acc[perda.atendente_nome].motivos[perda.motivo] || 0) + 1;
+    
+    return acc;
+  }, {} as Record<string, any>);
+  
+  const statsData = Object.values(atendenteStats).map((stats: any) => {
+    const motivoMaisComum = Object.entries(stats.motivos)
+      .sort(([,a], [,b]) => b - a)[0];
+    
+    return {
+      'Atendente': stats.atendente,
+      'Total de Perdas': stats.totalPerdas,
+      'Mesas Afetadas': stats.mesasAfetadas.size,
+      'Motivo Mais Comum': motivoMaisComum ? `${motivoMaisComum[0]} (${motivoMaisComum[1]})` : 'N/A'
+    };
+  }).sort((a, b) => b['Total de Perdas'] - a['Total de Perdas']);
+  
+  return statsData;
 }
 
 function generateFileName(filters: FilterParams): string {

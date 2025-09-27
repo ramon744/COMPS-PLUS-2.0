@@ -177,6 +177,14 @@ export default function Reports() {
             nome: manager.nome,
             email: manager.email
           })),
+          perdas: perdas.map(perda => ({
+            id: perda.id,
+            atendente_nome: perda.atendente_nome,
+            numero_mesa: perda.numero_mesa,
+            motivo: perda.motivo,
+            created_at: perda.created_at,
+            dia_operacional: calculateOperationalDay(perda.created_at)
+          })),
           filters,
           formatCurrency
         };
